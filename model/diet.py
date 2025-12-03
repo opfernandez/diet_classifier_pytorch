@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from DIET.model.sparse_features_extractor import SparseFeatureExtractor
+from DIET.model.crf import CRF
 
 class DIETModel(nn.Module):
     def __init__(self, word_dict_size: int = 300,
@@ -15,11 +16,9 @@ class DIETModel(nn.Module):
                  pad_token: str = "[PAD]",
                  cls_token: str = "[CLS]",
                  sep_token: str = "[SEP]",
-                 unk_token: str = "[UNK]",):
+                 unk_token: str = "[UNK]",
+                 num_entity_tags: int = 10):
         super(DIETModel, self).__init__()
-
-        self.ngram_max = ngram_max
-        self.ngram_min = ngram_min
 
         # Sparse extractor
         self.sparse_extractor = SparseFeatureExtractor(
@@ -37,7 +36,6 @@ class DIETModel(nn.Module):
         self.pad_idx = self.sparse_extractor.token_to_word_index(pad_token)
         self.word_emb = nn.Embedding(word_dict_size, ff_dim, padding_idx=self.pad_idx)
         self.ngram_emb_bag =  nn.EmbeddingBag(ngram_dict_size, ff_dim, mode="sum")
-        self.embedding_head
         # TODO: add dropout and do pruning 
         self.fc2 = nn.Linear(ff_dim, tf_dims) 
         # Transformer encoder
@@ -55,6 +53,9 @@ class DIETModel(nn.Module):
         self.activation = nn.ReLU()
         self.norm = nn.LayerNorm(tf_dims)
         self.dropout = nn.Dropout(0.8)
+        # Conditional Random Field (CRF) for sequence entity labeling
+        self.crf_ff = nn.Linear(tf_dims, num_entity_tags)
+        self.crf = CRF(num_tags=num_entity_tags, pad_idx=self.pad_idx)
         # Select device
         self.device = device
         # Special tokens token
@@ -110,8 +111,10 @@ class DIETModel(nn.Module):
         # Feedforward + Transformer
         x = self.activation(self.fc2(self.dropout(token_repr))) # [B, S, tf_dims]
         x = self.norm(x)
-        x = x.transpose(0,1) # Transformer expects [S, B, D]
-        x = self.transformer(x, src_key_padding_mask=padding_mask) # [S, B, D]
+        x = x.transpose(0,1) # Transformer expects [S, B, tf_dims]
+        x = self.transformer(x, src_key_padding_mask=padding_mask) # [S, B, tf_dims]
         x = x.transpose(0,1) # back to [B, S, D]
+        x_entity = self.crf_ff(x)  # [B, S, num_tags]
+        x_entity = self.crf(x_entity, ~padding_mask)  # Viterbi decode
         
-        return x
+        return x, x_entity

@@ -16,7 +16,7 @@ class CRF(nn.Module):
             self.transitions.data[:, pad_idx] = -10000
             self.transitions.data[pad_idx, :] = -10000
 
-    def forward(self, emissions, tags, mask):
+    def compute_loss(self, emissions, tags, mask):
         """
         Negative log likelihood (for training)
         emissions: [B, S, num_tags]
@@ -35,7 +35,7 @@ class CRF(nn.Module):
         # to make the loss independent of batch size
         return torch.mean(log_Z - log_p)
 
-    def decode(self, emissions, mask):
+    def forward(self, emissions, mask):
         """
         Viterbi
         emissions: [B, S, num_tags]
