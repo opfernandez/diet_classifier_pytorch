@@ -15,9 +15,9 @@ class DIETModel(nn.Module):
                  device: str = 'cuda',
                  pad_token: str = "[PAD]",
                  cls_token: str = "[CLS]",
-                 sep_token: str = "[SEP]",
                  unk_token: str = "[UNK]",
-                 num_entity_tags: int = 10):
+                 num_entity_tags: int = 10,
+                 num_intent_tags: int = 5):
         super(DIETModel, self).__init__()
 
         # Sparse extractor
@@ -28,7 +28,6 @@ class DIETModel(nn.Module):
             ngram_max=ngram_max,
             pad_token=pad_token,
             cls_token=cls_token,
-            sep_token=sep_token,
             unk_token=unk_token
         )
 
@@ -56,13 +55,14 @@ class DIETModel(nn.Module):
         # Conditional Random Field (CRF) for sequence entity labeling
         self.crf_ff = nn.Linear(tf_dims, num_entity_tags)
         self.crf = CRF(num_tags=num_entity_tags, pad_idx=self.pad_idx)
+        # Linear layer for intent classification
+        self.intent_ff = nn.Linear(tf_dims, num_intent_tags)
         # Select device
         self.device = device
         # Special tokens token
         self.pad_token = pad_token
         self.unkg_token = unk_token
         self.cls_token = cls_token
-        self.sep_token = sep_token
 
     def forward(self, input_texts: list[str]):
         """
@@ -81,7 +81,6 @@ class DIETModel(nn.Module):
         flat_ngrams = []
         offsets = []
         curr_offset = 0
-        # TODO: CLS token must be the aggregation of all sequence tokens
         # 2. Sparse vectors
         for i, seq in enumerate(padded_batch):
             for j, tok in enumerate(seq):
@@ -113,8 +112,11 @@ class DIETModel(nn.Module):
         x = self.norm(x)
         x = x.transpose(0,1) # Transformer expects [S, B, tf_dims]
         x = self.transformer(x, src_key_padding_mask=padding_mask) # [S, B, tf_dims]
-        x = x.transpose(0,1) # back to [B, S, D]
+        x = x.transpose(0,1) # back to [B, S, tf_dims]
+        # Infer entities
         x_entity = self.crf_ff(x)  # [B, S, num_tags]
         x_entity = self.crf(x_entity, ~padding_mask)  # Viterbi decode
+        # Infer intents
+        x_intent = self.intent_ff(x[:,0,:])  # [B, num_intent_tags]
         
-        return x, x_entity
+        return x_entity, x_intent

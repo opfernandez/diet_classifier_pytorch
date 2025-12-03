@@ -17,22 +17,23 @@ class SparseFeatureExtractor:
         tokenizer=None,
         word_dict_size: int = 2000,
         ngram_dict_size: int = 2000,
+        ngram_overflow_size: int = 100,
         ngram_min: int = 1,
         ngram_max: int = 3,
         pad_token: str = "[PAD]",
         cls_token: str = "[CLS]",
-        sep_token: str = "[SEP]",
         unk_token: str = "[UNK]",
     ):
         self.word_dict_size = word_dict_size
         self.ngram_dict_size = ngram_dict_size
+        self.ngram_overflow_size = ngram_overflow_size
+        self.total_ngram_dim = ngram_dict_size + ngram_overflow_size
         self.ngram_min = ngram_min
         self.ngram_max = ngram_max
         self.cls_token = cls_token
-        self.sep_token = sep_token
         self.unk_token = unk_token
         self.pad_token = pad_token
-        self.special_tokens = [cls_token, sep_token, unk_token, pad_token]
+        self.special_tokens = [cls_token, unk_token, pad_token]
 
         # initialize tokenizer
         if tokenizer is None:
@@ -49,7 +50,7 @@ class SparseFeatureExtractor:
     # =============================
     def _whitespace_tokenizer(self, text: str) -> List[str]:
         text = text.strip()
-        text = self.cls_token + " " + text + " " + self.sep_token
+        text = self.cls_token + " " + text
         return text.split()
 
     # =============================
@@ -133,7 +134,9 @@ class SparseFeatureExtractor:
     # Feature extraction
     # =============================
     def token_to_word_index(self, token: str) -> Optional[int]:
-        return self.word_dict.get(token)
+        # Return UNK if token not found
+        unk_index = self.word_dict.get(self.unk_token)
+        return self.word_dict.get(token, unk_index)
 
     def token_to_ngram_indices(self, token: str) -> List[int]:
         ngrams = self.char_ngrams(token, self.ngram_min, self.ngram_max)
@@ -142,39 +145,34 @@ class SparseFeatureExtractor:
             if ng in self.ngram_dict:
                 indices.append(self.ngram_dict[ng])
             else:
-                # fallback: use deterministic hash modulo dict size
-                idx = self.deterministic_hash(ng) % self.ngram_dict_size
+                # fallback: use deterministic hash and map to overflow area
+                idx = self.deterministic_hash(ng) % self.ngram_overflow_size + self.ngram_dict_size
                 indices.append(idx)
         return indices
 
-class CRFLayer(nn.Module):
-    def __init__(self):
-        super(CRFLayer, self).__init__()
-
-
-# if __name__ == "__main__":
-#     # Example usage
-#     corpus = [
-#         "hola mundo",
-#         "tortilla de patatas",
-#         "buenos dias",
-#         "hola ngram",
-#         "mundo de ngrams",
-#         "patatas con jamón y huevo",
-#         "apagar la luz de la sala"
-#     ]
-#     sfe = SparseFeatureExtractor(word_dict_size=20, ngram_dict_size=100, ngram_min=2, ngram_max=4)
-#     sfe.build_word_dict(corpus)
-#     sfe.build_ngram_dict(corpus)
-#     print("Word Dictionary:", sfe.word_dict)
-#     print("Ngram Dictionary:", sfe.ngram_dict)
-#     sfe.save_dicts("../data/word_dict.json", "../data/ngram_dict.json")
-#     text = "tortilla ngram"
-#     tokens = sfe.tokenizer(text)
-#     for tok in tokens:
-#         word_idx = sfe.token_to_word_index(tok)
-#         print(f"Token: {tok}, Word Index: {word_idx}")
-#         if tok in sfe.special_tokens:
-#             continue
-#         ngram_indices = sfe.token_to_ngram_indices(tok)
-#         print(f"Token: {tok}, Ngram Indices: {ngram_indices}")
+if __name__ == "__main__":
+    # Example usage
+    corpus = [
+        "hola mundo",
+        "tortilla de patatas",
+        "buenos dias",
+        "hola ngram",
+        "mundo de ngrams",
+        "patatas con jamón y huevo",
+        "apagar la luz de la sala"
+    ]
+    sfe = SparseFeatureExtractor(word_dict_size=20, ngram_dict_size=100, ngram_min=2, ngram_max=4)
+    sfe.build_word_dict(corpus)
+    sfe.build_ngram_dict(corpus)
+    print("Word Dictionary:", sfe.word_dict)
+    print("Ngram Dictionary:", sfe.ngram_dict)
+    sfe.save_dicts("../data/word_dict.json", "../data/ngram_dict.json")
+    text = "tortilla ngram alcachofa"
+    tokens = sfe.tokenizer(text)
+    for tok in tokens:
+        word_idx = sfe.token_to_word_index(tok)
+        print(f"Token: {tok}, Word Index: {word_idx}")
+        if tok in sfe.special_tokens:
+            continue
+        ngram_indices = sfe.token_to_ngram_indices(tok)
+        print(f"Token: {tok}, Ngram Indices: {ngram_indices}")
