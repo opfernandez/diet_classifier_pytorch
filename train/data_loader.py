@@ -20,17 +20,22 @@ import yaml
 #   "intent": "encender_luz"
 # }
 class DataLoader:
-    def __init__(self, data_path: str, batch_size: int = 32):
+    def __init__(self, data_path: str, 
+                 batch_size: int = 32,
+                 intent_labels: list[str] = None,
+                 entity_labels: list[str] = None):
         self.data_path = data_path
         self.batch_size = batch_size
         self.data = self.load_data()
         self.num_batches = len(self.data) // batch_size + (1 if len(self.data) % batch_size != 0 else 0)
+        self.intent_labels = intent_labels
+        self.entity_labels = entity_labels
 
     def load_data(self):
         with open(self.data_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         samples = []
-        for item in data.get("nlu", []):
+        for sentence_idx, item in enumerate(data.get("nlu", [])):
             intent = item.get("intent")
             examples = item.get("examples", "")
             for line in examples.strip().split("\n"):
@@ -40,17 +45,55 @@ class DataLoader:
                         # Entity part
                         entity_text = re.findall(r"\[(.*?)\]\((.*?)\)", part)[0][0]
                         entity_label = re.findall(r"\[(.*?)\]\((.*?)\)", part)[0][1]
-                        samples.append({
-                            "text": entity_text,
-                            "entity_tags": [f"B-{entity_label}"] + ["I-{entity_label}"] * (len(entity_text.split()) - 1),
-                            "intent": intent
-                        })
+                        # Check if we can append to the last sample
+                        if len(samples) > 0 and samples[-1]["index"] == sentence_idx:
+                            samples[-1]["text"] += " " + entity_text
+                            samples[-1]["entity_tags"].extend([f"B-{entity_label}"] + [f"I-{entity_label}"] * (len(entity_text.split()) - 1))
+                        else:
+                            # Otherwise, create a new sample
+                            samples.append({
+                                "text": entity_text,
+                                "entity_tags": [f"B-{entity_label}"] + [f"I-{entity_label}"] * (len(entity_text.split()) - 1),
+                                "intent": intent,
+                                "index": sentence_idx
+                            })
                     else:
                         # Plain text part
                         if part.strip():
-                            samples.append({
-                                "text": part.strip(),
-                                "entity_tags": ["O"] * len(part.strip().split()),
-                                "intent": intent
+                            # Check if we can append to the last sample
+                            if len(samples) > 0 and samples[-1]["index"] == sentence_idx:
+                                samples[-1]["text"] += " " + part.strip()
+                                samples[-1]["entity_tags"].extend(["O"] * len(part.strip().split()))
+                            else:
+                                # Otherwise, create a new sample
+                                samples.append({
+                                    "text": part.strip(),
+                                    "entity_tags": ["O"] * len(part.strip().split()),
+                                    "intent": intent,
+                                    "index": sentence_idx
                             })
-        return samples
+        # Group samles into batches
+        batches = [samples[i:i + self.batch_size] for i in range(0, len(samples), self.batch_size)]
+        return batches
+
+    def format_batch(self, batch):
+        text_inputs = []
+        one_hot_intent_labels = torch.zeros(len(batch), len(self.intent_labels), dtype=torch.float32)
+        max_seq_len = max(len(sample["entity_tags"]) for sample in batch)
+        entity_tag_indices = torch.zeros(len(batch), max_seq_len, dtype=torch.long)
+        for i, sample in enumerate(batch):
+            # List of text inputs
+            text_inputs.append(sample["text"])
+            # Tensor of entity tag labels (indices)
+            for j, tag in enumerate(sample["entity_tags"]):
+                try:
+                    entity_tag_indices[batch.index(sample), j] = self.entity_labels.index(tag)
+                except ValueError:
+                    raise ValueError(f"Tag {tag} not found in entity labels list.")
+            # One-hot tensor of intent labels
+            try:
+                intent_idx = self.intent_labels.index(sample["intent"])
+                one_hot_intent_labels[i, intent_idx] = 1.0
+            except ValueError:
+                raise ValueError(f"Intent {sample['intent']} not found in intent labels list.")
+        return text_inputs, entity_tag_indices, one_hot_intent_labels
