@@ -23,13 +23,15 @@ class DataLoader:
     def __init__(self, data_path: str, 
                  batch_size: int = 32,
                  intent_labels: list[str] = None,
-                 entity_labels: list[str] = None):
+                 entity_labels: list[str] = None,
+                 cls_token: str = "[CLS]",):
         self.data_path = data_path
         self.batch_size = batch_size
         self.data = self.load_data()
         self.num_batches = len(self.data) // batch_size + (1 if len(self.data) % batch_size != 0 else 0)
         self.intent_labels = intent_labels
         self.entity_labels = entity_labels
+        self.cls_token = cls_token
 
     def load_data(self):
         with open(self.data_path, "r", encoding="utf-8") as f:
@@ -52,8 +54,8 @@ class DataLoader:
                         else:
                             # Otherwise, create a new sample
                             samples.append({
-                                "text": entity_text,
-                                "entity_tags": [f"B-{entity_label}"] + [f"I-{entity_label}"] * (len(entity_text.split()) - 1),
+                                "text": self.cls_token + " " + entity_text,
+                                "entity_tags": ["O"] + [f"B-{entity_label}"] + [f"I-{entity_label}"] * (len(entity_text.split()) - 1),
                                 "intent": intent,
                                 "index": sentence_idx
                             })
@@ -67,8 +69,8 @@ class DataLoader:
                             else:
                                 # Otherwise, create a new sample
                                 samples.append({
-                                    "text": part.strip(),
-                                    "entity_tags": ["O"] * len(part.strip().split()),
+                                    "text": self.cls_token + " " + part.strip(),
+                                    "entity_tags": ["O"] * (len(part.strip().split()) + 1),
                                     "intent": intent,
                                     "index": sentence_idx
                             })

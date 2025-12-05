@@ -14,7 +14,6 @@ class SparseFeatureExtractor:
 
     def __init__(
         self,
-        tokenizer=None,
         word_dict_size: int = 2000,
         ngram_dict_size: int = 2000,
         ngram_overflow_size: int = 100,
@@ -36,10 +35,7 @@ class SparseFeatureExtractor:
         self.special_tokens = [cls_token, unk_token, pad_token]
 
         # initialize tokenizer
-        if tokenizer is None:
-            self.tokenizer = self._whitespace_tokenizer
-        else:
-            self.tokenizer = tokenizer
+        self.tokenizer = self._whitespace_tokenizer
 
         # dictionaries
         self.word_dict: Dict[str, int] = {}
@@ -50,7 +46,8 @@ class SparseFeatureExtractor:
     # =============================
     def _whitespace_tokenizer(self, text: str) -> List[str]:
         text = text.strip()
-        text = self.cls_token + " " + text
+        if not text.startswith(self.cls_token):
+            text = self.cls_token + " " + text
         return text.split()
 
     # =============================
