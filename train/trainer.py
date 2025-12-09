@@ -1,13 +1,9 @@
 import torch
-from torch import nn
-import re
 import sys
 import matplotlib.pyplot as plt
 
 from data_loader import DataLoader
 sys.path.append("../model")
-from sparse_features_extractor import SparseFeatureExtractor
-from crf import CRF
 from diet import DIETModel
 
 
@@ -22,8 +18,8 @@ class Trainer:
         self.device = device
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
         self.epochs = epochs
-        self.data_loader = data_loader
         self.loss_hstr = []
+        self.data_loader = data_loader
     
     def train_step(self, batch):
         # Batches comes as a list of samples (dictionaries)
