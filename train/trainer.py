@@ -2,42 +2,66 @@ import torch
 from torch import nn
 import re
 import sys
+import matplotlib.pyplot as plt
 
+from data_loader import DataLoader
 sys.path.append("../model")
 from sparse_features_extractor import SparseFeatureExtractor
 from crf import CRF
 from diet import DIETModel
 
+
 class Trainer:
     def __init__(self, 
-                 model: DIETModel, 
+                 model: DIETModel = None, 
                  device: str = 'cuda',
                  lr: float = 1e-3,
-                 intent_labels: list = None,
-                 entity_labels: list = None):
+                 epochs: int = 100,
+                 data_loader: DataLoader = None):
         self.model = model.to(device)
         self.device = device
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
-        self.criterion_intent = nn.CrossEntropyLoss()
+        self.epochs = epochs
+        self.data_loader = data_loader
+        self.loss_hstr = []
     
     def train_step(self, batch):
-        # self.model.train()
-        # self.optimizer.zero_grad()
+        # Batches comes as a list of samples (dictionaries)
+        # 1. Fromat the batch
+        (text_inputs, entity_tag_indices, 
+         one_hot_intent_labels) = self.data_loader.format_batch(batch)
+        # 2. Move to device
+        entity_tag_indices = entity_tag_indices.to(self.device)
+        one_hot_intent_labels = one_hot_intent_labels.to(self.device)
+        # 3. Reset gradients
+        self.optimizer.zero_grad()
+        # 4. Forward pass
+        loss = self.model.train_forward(
+            input_texts=text_inputs,
+            entity_labels=entity_tag_indices,
+            intent_labels=one_hot_intent_labels)
+        # 5. Backward pass
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
+    
+    def train(self):
+        self.model.train()
+        for epoch in range(self.epochs):
+            total_loss = 0.0
+            for batch_idx, batch in enumerate(self.data_loader.data):
+                loss = self.train_step(batch)
+                total_loss += loss
+            avg_loss = total_loss / self.data_loader.num_batches
+            print(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
+            self.loss_hstr.append(avg_loss)
 
-        # inputs, sparse_features, entity_tags, intent_tags, mask = batch
-        # inputs = inputs.to(self.device)
-        # sparse_features = sparse_features.to(self.device)
-        # entity_tags = entity_tags.to(self.device)
-        # intent_tags = intent_tags.to(self.device)
-        # mask = mask.to(self.device)
+    def plot_loss_history(self):
+        plt.plot(range(1, len(self.loss_hstr)+1), self.loss_hstr)
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Training Loss History")
+        plt.show()
 
-        # emissions_entity, intent_logits = self.model(inputs, sparse_features, mask)
-
-        # loss_entity = self.model.crf.compute_loss(emissions_entity, entity_tags, mask)
-        # loss_intent = self.criterion_intent(intent_logits, intent_tags)
-
-        # total_loss = loss_entity + loss_intent
-        # total_loss.backward()
-        # self.optimizer.step()
-
-        # return total_loss.item()
+    def __call__(self):
+        self.train()
