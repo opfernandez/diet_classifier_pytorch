@@ -57,12 +57,12 @@ class CRF(nn.Module):
         for i in range(S - 1):
             curr_tag = tags[:, i] # (B,)
             next_tag = tags[:, i + 1] # (B,)
-
+            # emissions[:, i, :]: (B, C) -> gather the emission score for the current tag (B,)
             emit_score = emissions[:, i, :].gather(1, curr_tag.unsqueeze(1)).squeeze(1) # (B,)
+            # transitions[curr_tag, next_tag]: (B,) -> gather the transition score from curr_tag to next_tag
             trans_score = self.transitions[curr_tag, next_tag] # (B,)
-
-            score += (emit_score + trans_score) * mask[:, i] 
-
+            # Apply mask and accumulate
+            score += (emit_score + trans_score) * mask[:, i] # (B,)
         # Last emission
         last_tag = tags[:, -1]
         last_emit = emissions[:, -1, :].gather(1, last_tag.unsqueeze(1)).squeeze(1)

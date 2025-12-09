@@ -24,14 +24,15 @@ class DataLoader:
                  batch_size: int = 32,
                  intent_labels: list[str] = None,
                  entity_labels: list[str] = None,
-                 cls_token: str = "[CLS]",):
+                 cls_token: str = "[CLS]"):
         self.data_path = data_path
         self.batch_size = batch_size
-        self.data = self.load_data()
-        self.num_batches = len(self.data) // batch_size + (1 if len(self.data) % batch_size != 0 else 0)
         self.intent_labels = intent_labels
         self.entity_labels = entity_labels
         self.cls_token = cls_token
+        # Load data
+        self.data = self.load_data()
+        self.num_batches = len(self.data) // batch_size + (1 if len(self.data) % batch_size != 0 else 0)
 
     def load_data(self):
         with open(self.data_path, "r", encoding="utf-8") as f:
@@ -99,3 +100,15 @@ class DataLoader:
             except ValueError:
                 raise ValueError(f"Intent {sample['intent']} not found in intent labels list.")
         return text_inputs, entity_tag_indices, one_hot_intent_labels
+    
+    def generate_word_dict(self):
+        word_set = set()
+        for batch in self.data:
+            for sample in batch:
+                for token in sample["text"].split():
+                    word_set.add(token)
+        word_list = list(word_set)
+        word_dict = {word: idx+2 for idx, word in enumerate(word_list)}  # +2 for PAD and UNK
+        word_dict["[PAD]"] = 0
+        word_dict["[UNK]"] = 1
+        return word_dict
