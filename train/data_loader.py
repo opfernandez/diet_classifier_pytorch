@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import re
-import sys
+import random
 import yaml
 
 # rasa expample:
@@ -75,7 +75,8 @@ class DataLoader:
                                     "intent": intent,
                                     "index": sentence_idx
                             })
-        # Group samles into batches
+        # Group samles into batches randomly
+        random.shuffle(samples)
         batches = [samples[i:i + self.batch_size] for i in range(0, len(samples), self.batch_size)]
         return batches
 
@@ -100,15 +101,3 @@ class DataLoader:
             except ValueError:
                 raise ValueError(f"Intent {sample['intent']} not found in intent labels list.")
         return text_inputs, entity_tag_indices, one_hot_intent_labels
-    
-    def generate_word_dict(self):
-        word_set = set()
-        for batch in self.data:
-            for sample in batch:
-                for token in sample["text"].split():
-                    word_set.add(token)
-        word_list = list(word_set)
-        word_dict = {word: idx+2 for idx, word in enumerate(word_list)}  # +2 for PAD and UNK
-        word_dict["[PAD]"] = 0
-        word_dict["[UNK]"] = 1
-        return word_dict
