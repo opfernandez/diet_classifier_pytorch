@@ -23,17 +23,19 @@ class CRF(nn.Module):
         tags: [B, S]
         mask: [B, S] (1=keep, 0=ignore)
         """
-        # Compute log prob of all paths and labeled path
-        # _sum_logprob_labeled_path is the sum of emissions and transitions for the given tags
+        # Compute log not normalized probability of all paths and labeled path
+        # _score_labeled_path is the sum of emissions and transitions for the given tags
         # _sum_logprob_all_paths is the log-sum-exp over all possible tag sequences
         # During training we want to maximize the log prob of the correct path relative to all paths
         # So we minimize the negative log likelihood
         # from paper: https://arxiv.org/pdf/1603.01360.pdf
         log_Z = self._sum_logprob_all_paths(emissions, mask)
-        log_p = self._sum_logprob_labeled_path(emissions, tags, mask)
+        log_p = self._score_labeled_path(emissions, tags, mask)
+        print("log_p:", log_p)
+        print("log_Z:", log_Z)
         # The mean negative log likelihood over the batch is returned
         # to make the loss independent of batch size
-        return torch.mean(log_Z - log_p)
+        return torch.mean(log_p - log_Z)
 
     def forward(self, emissions, mask):
         """
@@ -45,7 +47,7 @@ class CRF(nn.Module):
     
     # -------------------- INTERNALS -------------------- #
 
-    def _sum_logprob_labeled_path(self, emissions, tags, mask):
+    def _score_labeled_path(self, emissions, tags, mask):
         # emmissions: [B, S, C] -> Network outputs (logits) for each token
         # tags: [B, S] -> Ground truth tags
         # mask: [B, S] -> Mask for valid positions (1=valid, 0=pad)
@@ -85,7 +87,7 @@ class CRF(nn.Module):
             # at position i. 
             # We need to sum over the previous tags (dim 1) 
             # to get the total score for each current tag (dim 2)
-            # So the result is (B,C) and for each batch we have the total score/probability
+            # So the result is (B,C) and for each batch we have the total score/logit
             # of being in each tag at position i no matter the previous tag comming from.
             # That is what we got at torch.logsumexp(scores, dim=1)
             # If mask[:, i] is 1, we take the new scores, else we keep the old alpha
