@@ -64,5 +64,19 @@ def main():
     # Plot loss history
     trainer.plot_loss_history()
 
+    # Test saved model
+    model_path = os.path.join(trainer.checkpoint_path, trainer.checkpoint_name)
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    test_sentence = "encender la luz de la cocina"
+    print(f"Testing sentence: '{test_sentence}'")
+    with torch.no_grad():
+        tensor_entities, tensor_intent = model([test_sentence])
+    intent_idx = torch.argmax(tensor_intent, dim=1).item()
+    intent = intent_labels[intent_idx]
+    print(f"Predicted intent: {intent}")
+    print("Predicted intent tensor:", tensor_intent)
+    print(f"Predicted entities tensor: {tensor_entities}")
+
 if __name__ == "__main__":
     main()

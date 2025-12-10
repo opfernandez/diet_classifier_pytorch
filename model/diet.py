@@ -60,7 +60,7 @@ class DIETModel(nn.Module):
         )
         self.activation = nn.ReLU()
         self.norm = nn.LayerNorm(tf_dims)
-        self.dropout = nn.Dropout(0.8)
+        self.dropout = nn.Dropout(0.1)
         # Conditional Random Field (CRF) for sequence entity labeling
         self.crf_ff = nn.Linear(tf_dims, num_entity_tags)
         self.crf = CRF(num_tags=num_entity_tags, pad_idx=self.pad_idx)
@@ -156,6 +156,9 @@ class DIETModel(nn.Module):
         """
         Forward pass for training (returns emissions for CRF).
         """
+        print("input_texts:", input_texts)
+        print("entity_labels:", entity_labels)
+        print("intent_labels:", intent_labels)
         # 1. Compute sparse features
         (word_indices, flat_ngrams, 
          offsets, padding_mask) = self.compute_sparse_features(input_texts)
