@@ -38,10 +38,10 @@ class DataLoader:
         with open(self.data_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         samples = []
-        for sentence_idx, item in enumerate(data.get("nlu", [])):
+        for item in data.get("nlu", []):
             intent = item.get("intent")
             examples = item.get("examples", "")
-            for line in examples.strip().split("\n"):
+            for sentence_idx, line in enumerate(examples.strip().split("\n")):
                 line = line.strip().lstrip("-").strip()
                 for part in re.split(r"(\[.*?\]\(.*?\))", line):
                     if re.match(r"\[.*?\]\(.*?\)", part):

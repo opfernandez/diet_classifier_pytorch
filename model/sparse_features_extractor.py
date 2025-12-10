@@ -109,8 +109,8 @@ class SparseFeatureExtractor:
         if len(counter) > self.ngram_dict_size:
             print(f"Warning: ngram vocabulary size {len(counter)} exceeds limit {self.ngram_dict_size}. Truncating.")
         # sort by frequency
-        items = sorted(counter.items(), key=lambda x: -x[1])[:self.ngram_dict_size]
-        self.ngram_dict = {ng: idx for idx, (ng, _) in enumerate(items)}
+        items = sorted(counter.items(), key=lambda x: -x[1])[:self.ngram_dict_size-1]
+        self.ngram_dict = {ng: idx for idx, (ng, _) in enumerate(items, start=1)}  # reserve 0 for padding
 
     # =============================
     # Save/load dictionaries

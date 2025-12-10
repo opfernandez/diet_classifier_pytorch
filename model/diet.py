@@ -5,7 +5,8 @@ from crf import CRF
 
 class DIETModel(nn.Module):
     def __init__(self, word_dict_size: int = 300,
-                 ngram_dict_size: int = 1000, 
+                 ngram_dict_size: int = 1000,
+                 ngram_overflow_size: int = 100,
                  ngram_min: int = 2, 
                  ngram_max: int = 5, 
                  embed_dims: int = 512,
@@ -29,6 +30,7 @@ class DIETModel(nn.Module):
         self.sparse_extractor = SparseFeatureExtractor(
             word_dict_size=word_dict_size,
             ngram_dict_size=ngram_dict_size,
+            ngram_overflow_size=ngram_overflow_size,
             ngram_min=ngram_min,
             ngram_max=ngram_max,
             pad_token=pad_token,
@@ -39,7 +41,9 @@ class DIETModel(nn.Module):
         # Instead of big sparse vectors + FFL we use embeddings
         self.pad_idx = self.sparse_extractor.token_to_word_index(pad_token)
         self.word_emb = nn.Embedding(word_dict_size, embed_dims, padding_idx=self.pad_idx)
-        self.ngram_emb_bag =  nn.EmbeddingBag(ngram_dict_size, embed_dims, mode="sum")
+        # Use total_ngram_dim to include overflow space for out-of-vocabulary ngrams
+        total_ngram_dim = ngram_dict_size + ngram_overflow_size
+        self.ngram_emb_bag = nn.EmbeddingBag(total_ngram_dim, embed_dims, mode="sum")
         # TODO: add dropout and do pruning 
         self.fc2 = nn.Linear(embed_dims, tf_dims) 
         # Transformer encoder
@@ -138,7 +142,7 @@ class DIETModel(nn.Module):
         x = x.transpose(0,1) # back to [B, S, tf_dims]
         # Infer entities
         emissions = self.crf_ff(x)  # [B, S, num_tags]
-        x_entity = self.crf(emissions, ~padding_mask)  # Viterbi decode [B, S]
+        x_entity = self.crf(emissions, ~padding_mask.int())  # Viterbi decode [B, S]
         # Infer intents
         intent_logits = self.intent_ff(x[:,0,:])  # [B, num_intent_tags]
         # Compute softmax over intent logits
@@ -160,10 +164,7 @@ class DIETModel(nn.Module):
         # Compute sparse feature from embeddings
         word_emb = self.word_emb(word_indices)                # [B, S, embed_dims]
         ngram_emb = self.ngram_emb_bag(flat_ngrams, offsets)  # [B*S, embed_dims]
-        print(word_emb.shape)
-        print(ngram_emb.shape)
         ngram_emb = ngram_emb.view(batch_size, max_len, -1)   # [B, S, embed_dims]
-        print(ngram_emb.shape)
         token_repr = word_emb + ngram_emb                     # [B, S, embed_dims]
         # Feedforward + Transformer
         x = self.activation(self.fc2(self.dropout(token_repr))) # [B, S, tf_dims]
@@ -173,7 +174,7 @@ class DIETModel(nn.Module):
         x = x.transpose(0,1) # back to [B, S, tf_dims]
         # Emissions for CRF
         emissions = self.crf_ff(x)  # [B, S, num_tags]
-        entity_loss = self.crf.compute_loss(emissions, entity_labels, ~padding_mask)  # CRF loss
+        entity_loss = self.crf.compute_loss(emissions, entity_labels, ~padding_mask.int())  # CRF loss
         # Intent logits
         intent_logits = self.intent_ff(x[:,0,:])  # [B, num_intent_tags]
         intent_loss = self.intent_criterion(intent_logits, intent_labels)  # Intent loss

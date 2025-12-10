@@ -13,13 +13,23 @@ class Trainer:
                  device: str = 'cuda',
                  lr: float = 1e-3,
                  epochs: int = 100,
-                 data_loader: DataLoader = None):
+                 data_loader: DataLoader = None,
+                 checkpoint_path: str = None,
+                 checkpoint_name: str = None):
         self.model = model.to(device)
         self.device = device
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
         self.epochs = epochs
         self.loss_hstr = []
         self.data_loader = data_loader
+        self.checkpoint_name = checkpoint_name
+        self.checkpoint_path = checkpoint_path
+        if self.checkpoint_path is None:
+            self.checkpoint_path = "../model"
+            print(f"Model checkpoints will be saved to {self.checkpoint_path}")
+        if self.checkpoint_name is None:
+            self.checkpoint_name = "diet_model.pt"
+            print(f"Model checkpoint name: {self.checkpoint_name}")
     
     def train_step(self, batch):
         # Batches comes as a list of samples (dictionaries)
@@ -43,6 +53,7 @@ class Trainer:
     
     def train(self):
         self.model.train()
+        last_loss = 99999.99
         for epoch in range(self.epochs):
             total_loss = 0.0
             for batch_idx, batch in enumerate(self.data_loader.data):
@@ -50,6 +61,14 @@ class Trainer:
                 total_loss += loss
             avg_loss = total_loss / self.data_loader.num_batches
             print(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
+            if avg_loss < last_loss:
+                last_loss = avg_loss
+                # Save model checkpoint
+                torch.save(self.model.state_dict(), 
+                            f"{self.checkpoint_path}/{self.checkpoint_name}")
+                print("--"*30)
+                print(f"Model checkpoint saved to {self.checkpoint_path}/{self.checkpoint_name}")
+                print("--"*30)
             self.loss_hstr.append(avg_loss)
 
     def plot_loss_history(self):
