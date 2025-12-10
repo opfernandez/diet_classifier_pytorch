@@ -80,8 +80,20 @@ class CRF(nn.Module):
             trans = self.transitions.unsqueeze(0)        # (1,C,C)
             scores = alpha.unsqueeze(2) + emit + trans   # (B,C,C)
                                      # alpha.unsqueeze(2): (B,C,1)
-            alpha = torch.logsumexp(scores, dim=1) * mask[:, i].unsqueeze(1) \
-                    + alpha * (1 - mask[:, i]).unsqueeze(1) # (B,C)
+            # scores is a matrix of size (B,C,C) where for each batch we have 
+            # the scores of transitioning from each tag (dim 1) to each tag (dim 2)
+            # at position i. 
+            # We need to sum over the previous tags (dim 1) 
+            # to get the total score for each current tag (dim 2)
+            # So the result is (B,C) and for each batch we have the total score/probability
+            # of being in each tag at position i no matter the previous tag comming from.
+            # That is what we got at torch.logsumexp(scores, dim=1)
+            # If mask[:, i] is 1, we take the new scores, else we keep the old alpha
+            # mask[:, i] : (B,) -> unsqueeze(1) -> (B,1) to broadcast, that is to say,
+            # over a batch the value of the mask is multiplied to each class score
+            mask_i = mask[:, i].unsqueeze(1)  # (B, 1)
+            alpha = torch.logsumexp(scores, dim=1) * mask_i \
+                    + alpha * (1 - mask_i) # (B,C)
         # (B,) aggregate of all class scores over the same batch
         return torch.logsumexp(alpha, dim=1) 
 
@@ -90,13 +102,17 @@ class CRF(nn.Module):
 
         backpointers = []
         alpha = emissions[:, 0, :]  # (B, C)
-
+        # (B = batch size, C = From tags, C = To tags)
         for i in range(1, S):
             scores = alpha.unsqueeze(2) + self.transitions.unsqueeze(0) # (B,C,C)
             best_scores, best_tags = scores.max(1) # (B,C)
 
-            alpha = best_scores + emissions[:, i, :]  # (B,C)
-            backpointers.append(best_tags) # list of (B,C) -> (S, B, C)
+            # Apply mask: keep alpha unchanged for padded positions
+            new_alpha = best_scores + emissions[:, i, :]  # (B,C)
+            mask_i = mask[:, i].unsqueeze(1)  # (B, 1)
+            alpha = new_alpha * mask_i + alpha * (1 - mask_i)  # (B,C)
+            
+            backpointers.append(best_tags)  # list of (B,C) -> (S-1, B, C)
 
         # Backtrack
         best_last_tags = alpha.argmax(1) # (B,)
