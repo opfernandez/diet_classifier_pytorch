@@ -15,7 +15,7 @@ def main():
     data_path = os.path.join(script_dir, "../data/data.yml")
     batch_size = 32
     lr = 1e-3
-    epochs = 100
+    epochs = 2
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     entity_labels = ["PAD", "O", "B-sala", "I-sala", "B-dispositivo", "I-dispositivo"]
     intent_labels = ["encender_luz", "apagar_luz", 
