@@ -58,7 +58,7 @@ class Trainer:
     
     def train(self):
         self.model.train()
-        last_loss = 99999.99
+        last_loss = None
         for epoch in range(self.epochs):
             total_loss = 0.0
             for batch_idx, batch in enumerate(self.data_loader.data):
@@ -66,7 +66,7 @@ class Trainer:
                 total_loss += loss
             avg_loss = total_loss / self.data_loader.num_batches
             print(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
-            if avg_loss < last_loss:
+            if last_loss is None or avg_loss < last_loss:
                 last_loss = avg_loss
                 # Save model checkpoint
                 torch.save(self.model.state_dict(), 

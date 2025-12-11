@@ -19,11 +19,13 @@ class DIETModel(nn.Module):
                  unk_token: str = "[UNK]",
                  num_entity_tags: int = 10,
                  num_intent_tags: int = 5,
-                 pad_entity_tag_idx: int = None):
+                 pad_entity_tag_idx: int = None,
+                 eos_entity_tag_idx: int = None,
+                 bos_entity_tag_idx: int = None):
         
         self.pad_entity_tag_idx = pad_entity_tag_idx
-        if self.pad_entity_tag_idx is None:
-            raise ValueError("pad_entity_tag_idx must be provided for CRF padding.")
+        self.eos_entity_tag_idx = eos_entity_tag_idx
+        self.bos_entity_tag_idx = bos_entity_tag_idx
 
         # Initialize the DIET model
         super(DIETModel, self).__init__()
@@ -68,7 +70,10 @@ class DIETModel(nn.Module):
         self.dropout = nn.Dropout(0.1)
         # Conditional Random Field (CRF) for sequence entity labeling
         self.crf_ff = nn.Linear(tf_dims, num_entity_tags)
-        self.crf = CRF(num_tags=num_entity_tags, pad_idx=self.pad_entity_tag_idx)
+        self.crf = CRF(num_tags=num_entity_tags, 
+                       pad_idx=self.pad_entity_tag_idx,
+                       eos_idx=self.eos_entity_tag_idx,
+                       bos_idx=self.bos_entity_tag_idx)
         # Linear layer for intent classification
         self.intent_ff = nn.Linear(tf_dims, num_intent_tags)
         # Select device

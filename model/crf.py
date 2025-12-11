@@ -2,19 +2,32 @@ import torch
 import torch.nn as nn
 
 class CRF(nn.Module):
-    def __init__(self, num_tags: int, pad_idx: int = None):
+    def __init__(self, num_tags: int, 
+                 pad_idx: int = None,
+                 eos_idx: int = None,
+                 bos_idx: int = None):
         super().__init__()
 
         self.num_tags = num_tags
         self.pad_idx = pad_idx
+        self.eos_idx = eos_idx
+        self.bos_idx = bos_idx
+
+        if pad_idx is None or eos_idx is None or bos_idx is None:
+            raise ValueError("pad_idx, eos_idx, and bos_idx must be provided for CRF.")
 
         # Transition matrix [from state i, to state i+1]
         self.transitions = nn.Parameter(torch.randn(num_tags, num_tags))
 
+        # Penalize transitions to/from BOS and EOS
+        self.transitions.data[:, bos_idx] = -1e4
+        self.transitions.data[eos_idx, :] = -1e4
         # Penalize transitions to/from padding tag
-        if pad_idx is not None:
-            self.transitions.data[:, pad_idx] = -1e4
-            self.transitions.data[pad_idx, :] = -1e4
+        self.transitions.data[:, pad_idx] = -1e4
+        self.transitions.data[pad_idx, :] = -1e4
+        # Except for transitions from PAD to PAD or PAD to EOS
+        self.transitions.data[pad_idx, pad_idx] = 0.0
+        self.transitions.data[pad_idx, eos_idx] = 0.0
 
     def compute_loss(self, emissions, tags, mask):
         """
@@ -37,7 +50,7 @@ class CRF(nn.Module):
         # to make the loss independent of batch size
         # Invert order of terms as we want to maximeze the log-probability of
         # the correct tag sequence by minimizing the negative log-probability
-        return torch.mean(log_p - log_Z)
+        return torch.sum(log_p - log_Z)
 
     def forward(self, emissions, mask):
         """
@@ -57,27 +70,37 @@ class CRF(nn.Module):
         B, S, _ = emissions.shape
 
         score = torch.zeros(B, device=emissions.device)
+        first_tags = tags[:, 0]
+        # First emission
+        emit_score = emissions[:, 0, :].gather(1, first_tags.unsqueeze(1)).squeeze(1)  # (B,)
+        # Transition from BOS to first tag
+        first_trans_score = self.transitions[self.bos_idx, first_tags]  # (B,)
+        # Accumulate
+        score += emit_score + first_trans_score
 
-        for i in range(S - 1):
+        for i in range(1, S):
             curr_tag = tags[:, i] # (B,)
-            next_tag = tags[:, i + 1] # (B,)
+            prev_tag = tags[:, i - 1] # (B,)
             # emissions[:, i, :]: (B, C) -> gather the emission score for the current tag (B,)
             emit_score = emissions[:, i, :].gather(1, curr_tag.unsqueeze(1)).squeeze(1) # (B,)
             # transitions[curr_tag, next_tag]: (B,) -> gather the transition score from curr_tag to next_tag
-            trans_score = self.transitions[curr_tag, next_tag] # (B,)
+            trans_score = self.transitions[prev_tag, curr_tag] # (B,)
             # Apply mask and accumulate
             score += (emit_score + trans_score) * mask[:, i] # (B,)
         # Last emission
         last_tag = tags[:, -1]
-        last_emit = emissions[:, -1, :].gather(1, last_tag.unsqueeze(1)).squeeze(1)
-        score += last_emit * mask[:, -1]
-
+        last_trans_score = self.transitions[last_tag, self.eos_idx]  # (B,)
+        # Apply transition to EOS
+        score += last_trans_score
         return score
 
     def _score_all_paths(self, emissions, mask):
         B, S, C = emissions.shape
 
-        alpha = emissions[:, 0, :]  # (B, C)
+        emit_score = emissions[:, 0, :]  # (B, C)
+        first_trans_score = self.transitions[self.bos_idx, :].unsqueeze(0)  # (1, C) 
+
+        alpha = emit_score + first_trans_score  # (B, C)
 
         for i in range(1, S):
             emit = emissions[:, i, :].unsqueeze(1)       # (B,1,C)
@@ -98,6 +121,9 @@ class CRF(nn.Module):
             mask_i = mask[:, i].unsqueeze(1)  # (B, 1)
             alpha = torch.logsumexp(scores, dim=1) * mask_i \
                     + alpha * (1 - mask_i) # (B,C)
+        # Transition to EOS
+        last_trans_score = self.transitions[:, self.eos_idx].unsqueeze(0)  # (1, C)
+        alpha = alpha + last_trans_score  # (B,C)
         # (B,) aggregate of all class scores over the same batch
         return torch.logsumexp(alpha, dim=1) 
 
@@ -105,7 +131,10 @@ class CRF(nn.Module):
         B, S, C = emissions.shape
 
         backpointers = []
-        alpha = emissions[:, 0, :]  # (B, C)
+        emit_score = emissions[:, 0, :]  # (B, C)
+        first_trans_score = self.transitions[self.bos_idx, :].unsqueeze(0)  # (1, C) 
+
+        alpha = emit_score + first_trans_score  # (B, C)
         # (B = batch size, C = From tags, C = To tags)
         for i in range(1, S):
             scores = alpha.unsqueeze(2) + self.transitions.unsqueeze(0) # (B,C,C)
@@ -117,6 +146,9 @@ class CRF(nn.Module):
             alpha = new_alpha * mask_i + alpha * (1 - mask_i)  # (B,C)
             
             backpointers.append(best_tags)  # list of (B,C) -> (S-1, B, C)
+        # Transition to EOS
+        last_trans_score = self.transitions[:, self.eos_idx].unsqueeze(0)  # (1, C)
+        alpha = alpha + last_trans_score  # (B,C)
 
         # Backtrack
         best_last_tags = alpha.argmax(1) # (B,)

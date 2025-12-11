@@ -15,9 +15,9 @@ def main():
     data_path = os.path.join(script_dir, "../data/data.yml")
     batch_size = 32
     lr = 1e-3
-    epochs = 2
+    epochs = 200
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    entity_labels = ["PAD", "O", "B-sala", "I-sala", "B-dispositivo", "I-dispositivo"]
+    entity_labels = ["EOS", "BOS", "PAD", "O", "B-sala", "I-sala", "B-dispositivo", "I-dispositivo"]
     intent_labels = ["encender_luz", "apagar_luz", 
                      "apagar_enchufe", "activar_enchufe",
                      "subir_persiana", "bajar_persiana", "parar_persiana"]
@@ -40,7 +40,9 @@ def main():
         ngram_max=5,
         num_entity_tags=len(entity_labels),
         num_intent_tags=len(intent_labels),
-        pad_entity_tag_idx=entity_labels.index("PAD")
+        pad_entity_tag_idx=entity_labels.index("PAD"),
+        eos_entity_tag_idx=entity_labels.index("EOS"),
+        bos_entity_tag_idx=entity_labels.index("BOS")
     )
 
     # Generate word and ngram dictionaries from training data

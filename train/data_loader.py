@@ -89,16 +89,19 @@ class DataLoader:
         max_seq_len = max(len(sample["entity_tags"]) for sample in batch)
         entity_tag_indices = torch.zeros(len(batch), max_seq_len, dtype=torch.long)
         for i, sample in enumerate(batch):
+            # Create copies to avoid modifying the original sample in the dataset
+            text = sample["text"]
+            entity_tags = sample["entity_tags"].copy()
             # Add padding tokens to text sample
-            seq_len = len(sample["entity_tags"])
+            seq_len = len(entity_tags)
             padding_needed = max_seq_len - seq_len
             if padding_needed > 0:
-                sample["text"] += " " + " ".join([self.cls_token] * padding_needed)
-                sample["entity_tags"].extend([self.pad_entity_tag] * padding_needed)
+                text += " " + " ".join([self.pad_token] * padding_needed)
+                entity_tags.extend([self.pad_entity_tag] * padding_needed)
             # List of text inputs
-            text_inputs.append(sample["text"])
+            text_inputs.append(text)
             # Tensor of entity tag labels (indices)
-            for j, tag in enumerate(sample["entity_tags"]):
+            for j, tag in enumerate(entity_tags):
                 try:
                     entity_tag_indices[batch.index(sample), j] = self.entity_labels.index(tag)
                 except ValueError:
