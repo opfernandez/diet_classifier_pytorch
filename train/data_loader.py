@@ -31,6 +31,8 @@ class DataLoader:
         self.intent_labels = intent_labels
         self.entity_labels = entity_labels
         self.cls_token = cls_token
+        self.pad_token = pad_token
+        self.pad_entity_tag = pad_entity_tag
         # Load data
         self.data = self.load_data()
         self.num_batches = len(self.data) // batch_size + (1 if len(self.data) % batch_size != 0 else 0)

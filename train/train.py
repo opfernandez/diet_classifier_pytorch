@@ -27,7 +27,9 @@ def main():
                              batch_size=batch_size,
                              intent_labels=intent_labels,
                              entity_labels=entity_labels,
-                             cls_token="[CLS]")
+                             cls_token="[CLS]",
+                             pad_token="[PAD]",
+                             pad_entity_tag="PAD")
 
     # Initialize DIET model
     model = DIETModel(
@@ -37,7 +39,8 @@ def main():
         ngram_min=2,
         ngram_max=5,
         num_entity_tags=len(entity_labels),
-        num_intent_tags=len(intent_labels)
+        num_intent_tags=len(intent_labels),
+        pad_entity_tag_idx=entity_labels.index("PAD")
     )
 
     # Generate word and ngram dictionaries from training data
