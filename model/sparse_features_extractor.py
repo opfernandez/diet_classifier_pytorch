@@ -21,7 +21,7 @@ class SparseFeatureExtractor:
         ngram_max: int = 3,
         pad_token: str = "[PAD]",
         cls_token: str = "[CLS]",
-        unk_token: str = "[UNK]",
+        unk_token: str = "[UNK]"
     ):
         self.word_dict_size = word_dict_size
         self.ngram_dict_size = ngram_dict_size
@@ -109,8 +109,8 @@ class SparseFeatureExtractor:
         if len(counter) > self.ngram_dict_size:
             print(f"Warning: ngram vocabulary size {len(counter)} exceeds limit {self.ngram_dict_size}. Truncating.")
         # sort by frequency
-        items = sorted(counter.items(), key=lambda x: -x[1])[:self.ngram_dict_size-1]
-        self.ngram_dict = {ng: idx for idx, (ng, _) in enumerate(items, start=1)}  # reserve 0 for padding
+        items = sorted(counter.items(), key=lambda x: -x[1])[:self.ngram_dict_size]
+        self.ngram_dict = {ng: idx for idx, (ng, _) in enumerate(items)}
 
     # =============================
     # Save/load dictionaries

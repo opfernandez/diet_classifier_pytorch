@@ -18,8 +18,13 @@ class DIETModel(nn.Module):
                  cls_token: str = "[CLS]",
                  unk_token: str = "[UNK]",
                  num_entity_tags: int = 10,
-                 num_intent_tags: int = 5):
+                 num_intent_tags: int = 5,
+                 pad_entity_tag_idx: int = None):
         
+        self.pad_entity_tag_idx = pad_entity_tag_idx
+        if self.pad_entity_tag_idx is None:
+            raise ValueError("pad_entity_tag_idx must be provided for CRF padding.")
+
         # Initialize the DIET model
         super(DIETModel, self).__init__()
 
@@ -63,7 +68,7 @@ class DIETModel(nn.Module):
         self.dropout = nn.Dropout(0.1)
         # Conditional Random Field (CRF) for sequence entity labeling
         self.crf_ff = nn.Linear(tf_dims, num_entity_tags)
-        self.crf = CRF(num_tags=num_entity_tags, pad_idx=self.pad_idx)
+        self.crf = CRF(num_tags=num_entity_tags, pad_idx=self.pad_entity_tag_idx)
         # Linear layer for intent classification
         self.intent_ff = nn.Linear(tf_dims, num_intent_tags)
         # Select device
@@ -85,18 +90,15 @@ class DIETModel(nn.Module):
         # 1. Tokenization
         tokenized_batch = [self.sparse_extractor.tokenizer(text) for text in input_texts]
         batch_size = len(tokenized_batch)
-        seq_lens = [len(seq) for seq in tokenized_batch]
-        max_len = max(seq_lens)
-        # Add padding
-        padded_batch = [seq + [self.pad_token] * (max_len - len(seq)) for seq in tokenized_batch]
+        seq_lens = len(tokenized_batch[0]) # all sequences are padded to same length in DataLoader
         # Prepare empty tensors and variables   
-        word_indices = torch.zeros(batch_size, max_len, dtype=torch.long, device=self.device)
-        padding_mask = torch.zeros(batch_size, max_len, dtype=torch.bool, device=self.device)
+        word_indices = torch.zeros(batch_size, seq_lens, dtype=torch.long, device=self.device)
+        padding_mask = torch.zeros(batch_size, seq_lens, dtype=torch.bool, device=self.device)
         flat_ngrams = []
         offsets = []
         curr_offset = 0
         # 2. Sparse vectors
-        for i, seq in enumerate(padded_batch):
+        for i, seq in enumerate(tokenized_batch):
             for j, tok in enumerate(seq):
                 widx = self.sparse_extractor.token_to_word_index(tok)
                 word_indices[i, j] = widx

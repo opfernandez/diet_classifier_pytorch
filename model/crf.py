@@ -35,7 +35,9 @@ class CRF(nn.Module):
         print("log_Z:", log_Z)
         # The mean negative log likelihood over the batch is returned
         # to make the loss independent of batch size
-        return torch.mean(log_Z - log_p)
+        # Invert order of terms as we want to maximeze the log-probability of
+        # the correct tag sequence by minimizing the negative log-probability
+        return torch.mean(log_p - log_Z)
 
     def forward(self, emissions, mask):
         """
