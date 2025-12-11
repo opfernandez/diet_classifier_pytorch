@@ -13,8 +13,8 @@ class CRF(nn.Module):
 
         # Penalize transitions to/from padding tag
         if pad_idx is not None:
-            self.transitions.data[:, pad_idx] = -10000
-            self.transitions.data[pad_idx, :] = -10000
+            self.transitions.data[:, pad_idx] = -1e4
+            self.transitions.data[pad_idx, :] = -1e4
 
     def compute_loss(self, emissions, tags, mask):
         """
@@ -25,17 +25,17 @@ class CRF(nn.Module):
         """
         # Compute log not normalized probability of all paths and labeled path
         # _score_labeled_path is the sum of emissions and transitions for the given tags
-        # _sum_logprob_all_paths is the log-sum-exp over all possible tag sequences
+        # _score_all_paths is the log-sum-exp over all possible tag sequences
         # During training we want to maximize the log prob of the correct path relative to all paths
         # So we minimize the negative log likelihood
         # from paper: https://arxiv.org/pdf/1603.01360.pdf
-        log_Z = self._sum_logprob_all_paths(emissions, mask)
+        log_Z = self._score_all_paths(emissions, mask)
         log_p = self._score_labeled_path(emissions, tags, mask)
         print("log_p:", log_p)
         print("log_Z:", log_Z)
         # The mean negative log likelihood over the batch is returned
         # to make the loss independent of batch size
-        return torch.mean(log_p - log_Z)
+        return torch.mean(log_Z - log_p)
 
     def forward(self, emissions, mask):
         """
@@ -72,7 +72,7 @@ class CRF(nn.Module):
 
         return score
 
-    def _sum_logprob_all_paths(self, emissions, mask):
+    def _score_all_paths(self, emissions, mask):
         B, S, C = emissions.shape
 
         alpha = emissions[:, 0, :]  # (B, C)
