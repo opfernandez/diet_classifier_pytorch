@@ -17,7 +17,7 @@ def main():
     lr = 1e-3
     epochs = 100
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    entity_labels = ["O", "B-sala", "I-sala", "B-dispositivo", "I-dispositivo"]
+    entity_labels = ["PAD", "O", "B-sala", "I-sala", "B-dispositivo", "I-dispositivo"]
     intent_labels = ["encender_luz", "apagar_luz", 
                      "apagar_enchufe", "activar_enchufe",
                      "subir_persiana", "bajar_persiana", "parar_persiana"]

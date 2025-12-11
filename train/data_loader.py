@@ -1,5 +1,4 @@
 import torch
-from torch import nn
 import re
 import random
 import yaml
@@ -24,7 +23,9 @@ class DataLoader:
                  batch_size: int = 32,
                  intent_labels: list[str] = None,
                  entity_labels: list[str] = None,
-                 cls_token: str = "[CLS]"):
+                 cls_token: str = "[CLS]",
+                 pad_token: str = "[PAD]",
+                 pad_entity_tag: str = "PAD"):
         self.data_path = data_path
         self.batch_size = batch_size
         self.intent_labels = intent_labels
@@ -86,6 +87,12 @@ class DataLoader:
         max_seq_len = max(len(sample["entity_tags"]) for sample in batch)
         entity_tag_indices = torch.zeros(len(batch), max_seq_len, dtype=torch.long)
         for i, sample in enumerate(batch):
+            # Add padding tokens to text sample
+            seq_len = len(sample["entity_tags"])
+            padding_needed = max_seq_len - seq_len
+            if padding_needed > 0:
+                sample["text"] += " " + " ".join([self.cls_token] * padding_needed)
+                sample["entity_tags"].extend([self.pad_entity_tag] * padding_needed)
             # List of text inputs
             text_inputs.append(sample["text"])
             # Tensor of entity tag labels (indices)
