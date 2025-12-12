@@ -1,7 +1,7 @@
 import torch
 import sys
 import os
-import matplotlib.pyplot as plt
+import time
 
 from data_loader import DataLoader
 from trainer import Trainer
@@ -83,11 +83,15 @@ def main():
     print("--"*30)
     print("Available intents:", intent_labels)
     print("Available entity tags:", entity_labels)
+    print("--"*30)
     for b, sentence in enumerate(input_batch):
+        init_time = time.perf_counter()
         print(f"Sentence: '{sentence}'")
         print("Predicted entity tags:", [entity_labels[idx] for idx in tensor_entities[b].tolist()])
         print("Predicted intent tensor:", tensor_intent[b])
         print("Predicted intent:", intent_labels[torch.argmax(tensor_intent[b]).item()])
+        end_time = time.perf_counter()
+        print(f"Inference time: {(end_time - init_time)*1000:.2f} ms")
         print("--"*30)
 
 if __name__ == "__main__":
