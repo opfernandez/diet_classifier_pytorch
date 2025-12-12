@@ -44,8 +44,6 @@ class CRF(nn.Module):
         # from paper: https://arxiv.org/pdf/1603.01360.pdf
         log_Z = self._logadd_all_paths(emissions, mask)
         score = self._score_labeled_path(emissions, tags, mask)
-        print("score:", score)
-        print("log_Z:", log_Z)
         # The mean negative log likelihood over the batch is returned
         # to make the loss independent of batch size
         # Invert order of terms as we want to maximize the log-probability of

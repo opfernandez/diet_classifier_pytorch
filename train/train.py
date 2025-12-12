@@ -7,6 +7,7 @@ from data_loader import DataLoader
 from trainer import Trainer
 sys.path.append("../model")
 from diet import DIETModel
+from sparse_features_extractor import SparseFeatureExtractor
 
 def main():
     # Get script directory for relative paths
@@ -30,29 +31,38 @@ def main():
                              cls_token="[CLS]",
                              pad_token="[PAD]",
                              pad_entity_tag="PAD")
+    
+    # Create SparseFeatureExtractor instance
+    sparse_extractor = SparseFeatureExtractor(
+        word_dict_size=300,
+        ngram_dict_size=1000,
+        ngram_overflow_size=100,
+        ngram_min=2,
+        ngram_max=5,
+        pad_token="[PAD]",
+        cls_token="[CLS]",
+        unk_token="[UNK]"
+    )
+
+    # Generate word and ngram dictionaries from training data
+    all_texts = [sample["text"] for batch in data_loader.data for sample in batch]
+    sparse_extractor.build_word_dict(all_texts)
+    sparse_extractor.build_ngram_dict(all_texts)
+    # Save dictionaries
+    sparse_extractor.save_dicts(
+        os.path.join(script_dir, "../data/word_dict.json"),
+        os.path.join(script_dir, "../data/ngram_dict.json")
+    )
 
     # Initialize DIET model
     model = DIETModel(
         device=device,
-        word_dict_size=300,
-        ngram_dict_size=1000,
-        ngram_min=2,
-        ngram_max=5,
+        sparse_extractor=sparse_extractor,
         num_entity_tags=len(entity_labels),
         num_intent_tags=len(intent_labels),
         pad_entity_tag_idx=entity_labels.index("PAD"),
         eos_entity_tag_idx=entity_labels.index("EOS"),
         bos_entity_tag_idx=entity_labels.index("BOS")
-    )
-
-    # Generate word and ngram dictionaries from training data
-    all_texts = [sample["text"] for batch in data_loader.data for sample in batch]
-    model.sparse_extractor.build_word_dict(all_texts)
-    model.sparse_extractor.build_ngram_dict(all_texts)
-    # Save dictionaries
-    model.sparse_extractor.save_dicts(
-        os.path.join(script_dir, "../data/word_dict.json"),
-        os.path.join(script_dir, "../data/ngram_dict.json")
     )
 
     # Initialize Trainer

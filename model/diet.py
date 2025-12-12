@@ -4,11 +4,7 @@ from sparse_features_extractor import SparseFeatureExtractor
 from crf import CRF
 
 class DIETModel(nn.Module):
-    def __init__(self, word_dict_size: int = 300,
-                 ngram_dict_size: int = 1000,
-                 ngram_overflow_size: int = 100,
-                 ngram_min: int = 2, 
-                 ngram_max: int = 5, 
+    def __init__(self, sparse_extractor: SparseFeatureExtractor,
                  embed_dims: int = 512,
                  tf_layers: int = 2,
                  tf_dims: int = 256,
@@ -34,22 +30,14 @@ class DIETModel(nn.Module):
         self.intent_criterion = nn.CrossEntropyLoss()
 
         # Sparse extractor
-        self.sparse_extractor = SparseFeatureExtractor(
-            word_dict_size=word_dict_size,
-            ngram_dict_size=ngram_dict_size,
-            ngram_overflow_size=ngram_overflow_size,
-            ngram_min=ngram_min,
-            ngram_max=ngram_max,
-            pad_token=pad_token,
-            cls_token=cls_token,
-            unk_token=unk_token
-        )
+        self.sparse_extractor = sparse_extractor
 
         # Instead of big sparse vectors + FFL we use embeddings
         self.pad_idx = self.sparse_extractor.token_to_word_index(pad_token)
-        self.word_emb = nn.Embedding(word_dict_size, embed_dims, padding_idx=self.pad_idx)
+        self.word_emb = nn.Embedding(self.sparse_extractor.word_dict_size, 
+                                     embed_dims, padding_idx=self.pad_idx)
         # Use total_ngram_dim to include overflow space for out-of-vocabulary ngrams
-        total_ngram_dim = ngram_dict_size + ngram_overflow_size
+        total_ngram_dim = self.sparse_extractor.ngram_dict_size + self.sparse_extractor.ngram_overflow_size
         self.ngram_emb_bag = nn.EmbeddingBag(total_ngram_dim, embed_dims, mode="sum")
         # TODO: add dropout and do pruning 
         self.fc2 = nn.Linear(embed_dims, tf_dims) 
@@ -163,9 +151,6 @@ class DIETModel(nn.Module):
         """
         Forward pass for training (returns emissions for CRF).
         """
-        print("input_texts:", input_texts)
-        print("entity_labels:", entity_labels)
-        print("intent_labels:", intent_labels)
         # 1. Compute sparse features
         (word_indices, flat_ngrams, 
          offsets, padding_mask) = self.compute_sparse_features(input_texts)
