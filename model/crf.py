@@ -38,19 +38,19 @@ class CRF(nn.Module):
         """
         # Compute log not normalized probability of all paths and labeled path
         # _score_labeled_path is the sum of emissions and transitions for the given tags
-        # _score_all_paths is the log-sum-exp over all possible tag sequences
+        # _logadd_all_paths is the log-sum-exp over all possible tag sequences
         # During training we want to maximize the log prob of the correct path relative to all paths
         # So we minimize the negative log likelihood
         # from paper: https://arxiv.org/pdf/1603.01360.pdf
-        log_Z = self._score_all_paths(emissions, mask)
-        log_p = self._score_labeled_path(emissions, tags, mask)
-        print("log_p:", log_p)
+        log_Z = self._logadd_all_paths(emissions, mask)
+        score = self._score_labeled_path(emissions, tags, mask)
+        print("score:", score)
         print("log_Z:", log_Z)
         # The mean negative log likelihood over the batch is returned
         # to make the loss independent of batch size
-        # Invert order of terms as we want to maximeze the log-probability of
+        # Invert order of terms as we want to maximize the log-probability of
         # the correct tag sequence by minimizing the negative log-probability
-        return torch.sum(log_p - log_Z)
+        return torch.mean(log_Z - score)
 
     def forward(self, emissions, mask):
         """
@@ -68,7 +68,6 @@ class CRF(nn.Module):
         # mask: [B, S] -> Mask for valid positions (1=valid, 0=pad)
         # transitions: [C, C] -> Transition scores between tags
         B, S, _ = emissions.shape
-
         score = torch.zeros(B, device=emissions.device)
         first_tags = tags[:, 0]
         # First emission
@@ -88,13 +87,14 @@ class CRF(nn.Module):
             # Apply mask and accumulate
             score += (emit_score + trans_score) * mask[:, i] # (B,)
         # Last emission
-        last_tag = tags[:, -1]
+        last_valid_idx = mask.sum(dim=1) - 1 # (B,)
+        last_tag = tags.gather(1, last_valid_idx.unsqueeze(1)).squeeze(1) # (B,)
         last_trans_score = self.transitions[last_tag, self.eos_idx]  # (B,)
         # Apply transition to EOS
         score += last_trans_score
         return score
 
-    def _score_all_paths(self, emissions, mask):
+    def _logadd_all_paths(self, emissions, mask):
         B, S, C = emissions.shape
 
         emit_score = emissions[:, 0, :]  # (B, C)

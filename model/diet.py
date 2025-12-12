@@ -184,7 +184,7 @@ class DIETModel(nn.Module):
         x = x.transpose(0,1) # back to [B, S, tf_dims]
         # Emissions for CRF
         emissions = self.crf_ff(x)  # [B, S, num_tags]
-        entity_loss = self.crf.compute_loss(emissions, entity_labels, ~padding_mask.int())  # CRF loss
+        entity_loss = self.crf.compute_loss(emissions, entity_labels, (1-padding_mask.int()))  # CRF loss
         # Intent logits
         intent_logits = self.intent_ff(x[:,0,:])  # [B, num_intent_tags]
         intent_loss = self.intent_criterion(intent_logits, intent_labels)  # Intent loss
