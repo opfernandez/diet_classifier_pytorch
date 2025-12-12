@@ -15,7 +15,7 @@ def main():
     data_path = os.path.join(script_dir, "../data/data.yml")
     batch_size = 32
     lr = 1e-3
-    epochs = 200
+    epochs = 20
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     entity_labels = ["EOS", "BOS", "PAD", "O", "B-sala", "I-sala", "B-dispositivo", "I-dispositivo"]
     intent_labels = ["encender_luz", "apagar_luz", 
@@ -73,15 +73,22 @@ def main():
     model_path = os.path.join(trainer.checkpoint_path, trainer.checkpoint_name)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
-    test_sentence = "encender la luz de la cocina"
-    print(f"Testing sentence: '{test_sentence}'")
+    test_sentence1 = "encender la luz de la cocina"
+    test_sentence2 = "apagar el enchufe del televisor [PAD]"
+    input_batch = [test_sentence1, test_sentence2]
     with torch.no_grad():
-        tensor_entities, tensor_intent = model([test_sentence])
-    intent_idx = torch.argmax(tensor_intent, dim=1).item()
-    intent = intent_labels[intent_idx]
-    print(f"Predicted intent: {intent}")
-    print("Predicted intent tensor:", tensor_intent)
-    print(f"Predicted entities tensor: {tensor_entities}")
+        tensor_entities, tensor_intent = model(input_batch)
+
+    # Print results
+    print("--"*30)
+    print("Available intents:", intent_labels)
+    print("Available entity tags:", entity_labels)
+    for b, sentence in enumerate(input_batch):
+        print(f"Sentence: '{sentence}'")
+        print("Predicted entity tags:", [entity_labels[idx] for idx in tensor_entities[b].tolist()])
+        print("Predicted intent tensor:", tensor_intent[b])
+        print("Predicted intent:", intent_labels[torch.argmax(tensor_intent[b]).item()])
+        print("--"*30)
 
 if __name__ == "__main__":
     main()

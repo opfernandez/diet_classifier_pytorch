@@ -133,6 +133,7 @@ class CRF(nn.Module):
         backpointers = []
         emit_score = emissions[:, 0, :]  # (B, C)
         first_trans_score = self.transitions[self.bos_idx, :].unsqueeze(0)  # (1, C) 
+        last_valid_idx = mask.sum(dim=1) # (B,)
 
         alpha = emit_score + first_trans_score  # (B, C)
         # (B = batch size, C = From tags, C = To tags)
@@ -146,18 +147,39 @@ class CRF(nn.Module):
             alpha = new_alpha * mask_i + alpha * (1 - mask_i)  # (B,C)
             
             backpointers.append(best_tags)  # list of (B,C) -> (S-1, B, C)
+        
         # Transition to EOS
         last_trans_score = self.transitions[:, self.eos_idx].unsqueeze(0)  # (1, C)
         alpha = alpha + last_trans_score  # (B,C)
 
         # Backtrack
         best_last_tags = alpha.argmax(1) # (B,)
-        best_paths = [best_last_tags] 
+        best_paths = [] 
 
-        for backptrs in reversed(backpointers):
-            # gets the index from last steps that led to best current tag
-            # so it gathers the path from the best last tag to the first
-            best_last_tags = backptrs.gather(1, best_last_tags.unsqueeze(1)).squeeze(1) # (B,)
-            best_paths.insert(0, best_last_tags) # list of (B,) of length S
-
-        return torch.stack(best_paths, dim=1) # (B, S)
+        for b in range(B):
+            # Length of the sequence for batch b considering only valid tokens
+            seq_len = int(last_valid_idx[b].item())
+            best_tag = best_last_tags[b].item() # Get the bestlast tag
+            
+            # Initialize path with the best last tag
+            # and backtrack through backpointers
+            path = [best_tag]
+            
+            # Backpropagate only through valid positions (seq_len - 1 backpointers)
+            for t in range(seq_len - 2, -1, -1):
+                # gets the index from last steps that led to best current tag
+                # so it gathers the path from the best last tag to the first
+                best_tag = backpointers[t][b, best_tag].item()
+                path.insert(0, best_tag) # List of length seq_len
+            
+            best_paths.append(path) # List of B paths each one of their own length
+        
+        # Convert best paths to tensor with padding
+        max_path_len = max(len(p) for p in best_paths)
+        padded_paths = torch.full((B, max_path_len), self.pad_idx, 
+                                   dtype=torch.long, device=emissions.device)
+        
+        for b, path in enumerate(best_paths):
+            padded_paths[b, :len(path)] = torch.tensor(path, dtype=torch.long)
+        
+        return padded_paths  # (B, max_seq_len)

@@ -149,7 +149,7 @@ class DIETModel(nn.Module):
         x = x.transpose(0,1) # back to [B, S, tf_dims]
         # Infer entities
         emissions = self.crf_ff(x)  # [B, S, num_tags]
-        x_entity = self.crf(emissions, ~padding_mask.int())  # Viterbi decode [B, S]
+        x_entity = self.crf(emissions, (1-padding_mask.int()))  # Viterbi decode [B, S]
         # Infer intents
         intent_logits = self.intent_ff(x[:,0,:])  # [B, num_intent_tags]
         # Compute softmax over intent logits
