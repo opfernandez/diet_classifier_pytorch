@@ -1,0 +1,124 @@
+version: "3.1"
+
+nlu:
+
+- intent: encender_luz
+  examples: |
+    - dame luz en el [salon](sala)
+    - podrias poner la luz del [dormitorio](sala)
+    - necesito luz en la [cocina](sala)
+    - pon luz en el [aseo](sala)
+    - activa la lampara del [comedor](sala)
+    - ilumina el [pasillo](sala) por favor
+    - quiero que se ilumine el [garaje](sala)
+    - enciende las luces de la [terraza](sala)
+    - da luz a la [habitacion](sala)
+    - activa la iluminacion del [sotano](sala)
+    - haz que haya luz en el [vestibulo](sala)
+    - prende las luces del [lavadero](sala)
+    - necesito iluminacion en la [buhardilla](sala)
+    - activa las lamparas del [gimnasio](sala)
+    - por favor enciende las luces de la [oficina](sala)
+
+- intent: apagar_luz
+  examples: |
+    - quita la iluminacion del [salon](sala)
+    - necesito que apagues la luz del [dormitorio](sala)
+    - deja a oscuras la [cocina](sala)
+    - oscurece el [aseo](sala) por favor
+    - desactiva las lamparas del [comedor](sala)
+    - quita las luces del [pasillo](sala)
+    - no quiero iluminacion en el [garaje](sala)
+    - apaga las luces de la [terraza](sala)
+    - deja sin luz la [habitacion](sala)
+    - desactiva la iluminacion del [sotano](sala)
+    - haz que no haya luz en el [vestibulo](sala)
+    - apaga las luces del [lavadero](sala)
+    - quita la iluminacion de la [buhardilla](sala)
+    - desactiva las lamparas del [gimnasio](sala)
+    - por favor apaga las luces de la [oficina](sala)
+
+- intent: activar_enchufe
+  examples: |
+    - dale corriente a la [tostadora](dispositivo)
+    - conecta el [lavavajillas](dispositivo)
+    - quiero que funcione la [secadora](dispositivo)
+    - pon en funcionamiento el [aire acondicionado](dispositivo)
+    - activa el [purificador](dispositivo) por favor
+    - dale al interruptor del [radiador](dispositivo)
+    - conecta la [consola de videojuegos](dispositivo)
+    - enciende el [proyector de cine](dispositivo)
+    - activa la [freidora de aire](dispositivo)
+    - pon en marcha el [robot aspirador](dispositivo)
+    - haz que funcione el [ventilador de techo](dispositivo)
+    - conecta el [calentador de agua](dispositivo)
+    - dale corriente al [horno electrico](dispositivo)
+    - activa el [sistema de sonido](dispositivo)
+    - enciende la [maquina de cafe](dispositivo)
+
+- intent: apagar_enchufe
+  examples: |
+    - quita la corriente a la [tostadora](dispositivo)
+    - desconecta el [lavavajillas](dispositivo)
+    - quiero que pare la [secadora](dispositivo)
+    - deja de usar el [aire acondicionado](dispositivo)
+    - desactiva el [purificador](dispositivo) por favor
+    - corta el interruptor del [radiador](dispositivo)
+    - desconecta la [consola de videojuegos](dispositivo)
+    - apaga el [proyector de cine](dispositivo)
+    - desactiva la [freidora de aire](dispositivo)
+    - para el [robot aspirador](dispositivo)
+    - haz que deje de funcionar el [ventilador de techo](dispositivo)
+    - desconecta el [calentador de agua](dispositivo)
+    - quita la corriente al [horno electrico](dispositivo)
+    - desactiva el [sistema de sonido](dispositivo)
+    - apaga la [maquina de cafe](dispositivo)
+
+- intent: subir_persiana
+  examples: |
+    - abre las persianas del [salon](sala)
+    - quiero luz natural en el [dormitorio](sala)
+    - alza la persiana de la [cocina](sala)
+    - levanta las persianas del [comedor](sala)
+    - abre las cortinas del [pasillo](sala)
+    - deja entrar luz en el [garaje](sala)
+    - eleva la persiana de la [terraza](sala)
+    - quiero que entre luz al [jardin](sala)
+    - abre la persiana del [sotano](sala) por favor
+    - levanta la persiana del [lavadero](sala)
+    - abre las persianas de la [buhardilla](sala)
+    - sube las persianas del [gimnasio](sala)
+    - quiero luz solar en la [oficina](sala)
+
+- intent: bajar_persiana
+  examples: |
+    - cierra las persianas del [salon](sala)
+    - no quiero luz natural en el [dormitorio](sala)
+    - cierra la persiana del [aseo](sala)
+    - baja las persianas del [comedor](sala)
+    - cierra las cortinas del [pasillo](sala)
+    - no dejes entrar luz en el [garaje](sala)
+    - desciende la persiana de la [terraza](sala)
+    - quiero que no entre luz al [jardin](sala)
+    - cierra la persiana del [sotano](sala) por favor
+    - desciende la persiana del [lavadero](sala)
+    - cierra las persianas de la [buhardilla](sala)
+    - baja las persianas del [gimnasio](sala)
+    - no quiero luz solar en la [oficina](sala)
+
+- intent: parar_persiana
+  examples: |
+    - alto ahi
+    - basta
+    - dejala ahi
+    - para ya la persiana
+    - que se detenga
+    - para la persiana del [salon](sala)
+    - deten la persiana del [dormitorio](sala) ahi
+    - frena la persiana de la [cocina](sala)
+    - para el movimiento de la persiana del [aseo](sala)
+    - deja la persiana del [comedor](sala) ahi
+    - stop persiana del [pasillo](sala)
+    - que pare la persiana del [garaje](sala)
+    - detener persiana de la [terraza](sala)
+    - para el movimiento del [despacho](sala)
