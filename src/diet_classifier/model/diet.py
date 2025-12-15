@@ -15,6 +15,7 @@ class DIETModel(nn.Module):
                  unk_token: str = "[UNK]",
                  num_entity_tags: int = 10,
                  num_intent_tags: int = 5,
+                 dropout_rate: float = 0.2,
                  pad_entity_tag_idx: int = None,
                  eos_entity_tag_idx: int = None,
                  bos_entity_tag_idx: int = None):
@@ -46,7 +47,7 @@ class DIETModel(nn.Module):
             d_model=tf_dims,      # embedding dimension
             nhead=tf_n_heads,        # number of attention heads
             dim_feedforward=tf_dims*4,  # feedforward hidden dimension
-            dropout=0.1,
+            dropout=dropout_rate,
             activation='relu'
         )
         self.transformer = nn.TransformerEncoder(
@@ -55,7 +56,7 @@ class DIETModel(nn.Module):
         )
         self.activation = nn.ReLU()
         self.norm = nn.LayerNorm(tf_dims)
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(dropout_rate)
         # Conditional Random Field (CRF) for sequence entity labeling
         self.crf_ff = nn.Linear(tf_dims, num_entity_tags)
         self.crf = CRF(num_tags=num_entity_tags, 
