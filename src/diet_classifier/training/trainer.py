@@ -49,11 +49,11 @@ class Trainer:
         # 5. Backward pass
         loss.backward()
         self.optimizer.step()
-        # # 6. Fix transition values for padding tags in CRF model
-        # if self.model.crf.pad_idx is not None:
-        #     with torch.no_grad():
-        #         self.model.crf.transitions.data[:, self.model.crf.pad_idx] = -1e4
-        #         self.model.crf.transitions.data[self.model.crf.pad_idx, :] = -1e4
+        # Fix values of transition matrix for PAD tag
+        with torch.no_grad():
+            pad_idx = self.model.entity_pad_idx
+            self.model.crf.transitions[pad_idx, :] = -1e4  # No transition from PAD to any tag
+            self.model.crf.transitions[:, pad_idx] = -1e4  # No transition to PAD from any tag
         return loss.item()
     
     def train(self):
