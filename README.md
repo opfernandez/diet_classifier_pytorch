@@ -9,6 +9,7 @@ This implementation is based on the following papers:
 ## Table of Contents
 
 - [Overview](#overview)
+- [Installation](#installation)
 - [Architecture](#architecture)
   - [Architecture Diagram](#architecture-diagram)
   - [Component Description](#component-description)
@@ -32,6 +33,54 @@ DIET is a lightweight multi-task architecture designed for Natural Language Unde
 2. **Entity Recognition**: Extracting relevant entities using BIO tagging (e.g., room names, device names)
 
 The key advantage of DIET is that it achieves competitive performance without requiring large pre-trained language models, making it efficient for production deployment.
+
+---
+
+## Installation
+
+### Using uv (Recommended)
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package and project manager. To install the project with uv:
+
+```bash
+# Clone the repository
+git clone https://github.com/opfernandez/diet_classifier_pytorch.git
+cd diet_classifier_pytorch
+
+# Create a virtual environment and install dependencies
+uv venv
+source .venv/bin/activate 
+
+# Install the package in development mode
+uv pip install -e .
+
+# Or install with dev dependencies
+uv pip install -e ".[dev]"
+```
+
+### Using pip
+
+```bash
+# Clone the repository
+git clone https://github.com/opfernandez/diet_classifier_pytorch.git
+cd diet_classifier_pytorch
+
+# Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate 
+
+# Install the package
+pip install -e .
+```
+
+### Dependencies
+
+The project requires the following packages:
+- `torch` - PyTorch deep learning framework
+- `pyyaml` - YAML file parsing
+- `matplotlib` - Visualization
+- `scikit-learn` - Machine learning utilities
+- `numpy` - Numerical computing
 
 ---
 
@@ -267,7 +316,7 @@ For each batch:
 ### Training
 
 ```bash
-cd train
+cd scripts
 python train.py
 ```
 
@@ -275,23 +324,72 @@ This will:
 1. Load training data from `data/data.yml`
 2. Build word and n-gram dictionaries
 3. Train the DIET model
-4. Save the best checkpoint to `model/diet_model.pt`
+4. Save the best checkpoint to `models/diet_model.pt`
 5. Display a loss history plot
 
-### Inference
+### Validation
+
+```bash
+cd scripts
+python validation.py
+```
+
+This will:
+1. Load validation data from `data/validation.yml`
+2. Load the trained model from `models/diet_model.pt`
+3. Compute F1 score for entity recognition
+4. Compute accuracy for intent classification
+5. Display confusion matrices
+
+### Inference Server
+
+The project includes a socket-based inference server for production deployment:
+
+```bash
+python -m diet_classifier.inference.server
+```
+
+This starts a TCP server on `0.0.0.0:5555` that accepts JSON requests:
+
+```bash
+# Example client request
+echo '{"text": "encender la luz de la cocina"}' | nc localhost 5555
+```
+
+**Response format:**
+```json
+{
+    "status": "success",
+    "result": {
+        "text": "encender la luz de la cocina",
+        "intent": "turn_on_light",
+        "intent_confidence": 0.95,
+        "entities": [
+            {"type": "room", "start": 4, "end": 4, "words": "cocina"}
+        ],
+        "inference_time_ms": 2.5
+    }
+}
+```
+
+### Programmatic Inference
 
 ```python
-import torch
-from model.diet import DIETModel
+from diet_classifier.inference import DIETServer
 
-# Load model
-model = DIETModel(...)
-model.load_state_dict(torch.load("model/diet_model.pt"))
-model.eval()
+# Initialize server (also works for direct inference)
+server = DIETServer(
+    device='cuda',  # or 'cpu'
+    model_path='models/diet_model.pt',
+    word_dict_path='data/word_dict.json',
+    ngram_dict_path='data/ngram_dict.json',
+    entity_labels_path='data/entity_labels.json',
+    intent_labels_path='data/intent_labels.json'
+)
 
-# Predict
-with torch.no_grad():
-    entities, intent_probs = model(["turn on the kitchen light"])
+# Perform inference
+results = server.predict(["encender la luz de la cocina"])
+print(results[0])
 ```
 
 ---
@@ -300,21 +398,42 @@ with torch.no_grad():
 
 ```
 diet_classifier_pytorch/
-|-- data/
-|   |-- data.yml           # Training data in Rasa NLU format
-|   |-- word_dict.json     # Generated word vocabulary
-|   |-- ngram_dict.json    # Generated n-gram vocabulary
-|
-|-- model/
-|   |-- diet.py            # Main DIET model architecture
-|   |-- crf.py             # Conditional Random Field implementation
-|   |-- sparse_features_extractor.py  # Word and n-gram feature extraction
-|   |-- diet_model.pt      # Trained model weights
-|
-|-- train/
-|   |-- train.py           # Training entry point
-|   |-- trainer.py         # Training loop and checkpointing
-|   |-- data_loader.py     # Data loading and preprocessing
+├── pyproject.toml              # Project configuration and dependencies
+├── README.md
+│
+├── data/
+│   ├── data.yml                # Training data in Rasa NLU format
+│   ├── validation.yml          # Validation data
+│   ├── word_dict.json          # Generated word vocabulary
+│   ├── ngram_dict.json         # Generated n-gram vocabulary
+│   ├── entity_labels.json      # Entity label definitions (BIO tags)
+│   └── intent_labels.json      # Intent label definitions
+│
+├── models/
+│   └── diet_model.pt           # Trained model weights
+│
+├── scripts/
+│   ├── train.py                # Training entry point
+│   └── validation.py           # Validation and metrics computation
+│
+└── src/
+    └── diet_classifier/
+        ├── __init__.py
+        │
+        ├── model/
+        │   ├── __init__.py
+        │   ├── diet.py                     # Main DIET model architecture
+        │   ├── crf.py                      # Conditional Random Field implementation
+        │   └── sparse_features_extractor.py # Word and n-gram feature extraction
+        │
+        ├── training/
+        │   ├── __init__.py
+        │   ├── trainer.py                  # Training loop and checkpointing
+        │   └── data_loader.py              # Data loading and preprocessing
+        │
+        └── inference/
+            ├── __init__.py
+            └── server.py                   # Socket-based inference server
 ```
 
 ---
