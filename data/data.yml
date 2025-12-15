@@ -5,6 +5,7 @@ nlu:
 - intent: encender_luz
   examples: |
     - enciende la luz del [salon](sala)
+    - enciende la luz de la [cocina](sala)
     - por favor, enciende la luz de la [cocina](sala)
     - quiero que enciendas la luz del [dormitorio](sala)
     - activa la luz del [aseo](sala)

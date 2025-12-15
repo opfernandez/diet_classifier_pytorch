@@ -9,8 +9,6 @@ import threading
 from ..model.diet import DIETModel
 from ..model.sparse_features_extractor import SparseFeatureExtractor
 
-
-
 class DIETServer:
     def __init__(self, 
                  device: str = 'cuda',
@@ -102,7 +100,9 @@ class DIETServer:
                 "inference_time_ms": inference_time
             }
             results.append(result)
-        
+        print("=="*40)
+        print("Inference results:\n", results)
+        print("=="*40)
         for result in results:
             result = self.format_entities(result)
         
@@ -123,7 +123,6 @@ class DIETServer:
                     "end": idx,
                     "words": result["text"].split()[idx]
                 }
-                print(result["text"].split()[idx])
             elif tag.startswith("I-") and current_entity is not None:
                 current_entity["end"] = idx
                 current_entity["words"] += " " + result["text"].split()[idx]
@@ -212,33 +211,3 @@ class DIETServer:
         finally:
             client_socket.close()
             print(f"Connection closed: {client_address}")
-            
-
-
-def main():
-    # Get script directory for relative paths
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Hyperparameters
-    entities_file = os.path.join(script_dir, "../data/entity_labels.json")
-    intents_file =  os.path.join(script_dir, "../data/intent_labels.json")
-    model_path = os.path.join(script_dir, "../model/diet_model.pt")
-    word_dict_path = os.path.join(script_dir, "../data/word_dict.json")
-    ngram_dict_path = os.path.join(script_dir, "../data/ngram_dict.json")
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Using device: {device}")
-    # Initialize DIETServer
-    server = DIETServer(
-        device=device,
-        model_path=model_path,
-        word_dict_path=word_dict_path,
-        ngram_dict_path=ngram_dict_path,
-        entity_labels_path=entities_file,
-        intent_labels_path=intents_file
-    )
-    
-    # Start the server
-    server.run(host='0.0.0.0', port=5555)
-
-
-if __name__ == "__main__":
-    main()
