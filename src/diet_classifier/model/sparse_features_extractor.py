@@ -1,8 +1,6 @@
 import hashlib
 import json
 from typing import Dict, List, Optional, Iterable
-import torch
-from torch import nn
 
 class SparseFeatureExtractor:
     """

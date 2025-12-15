@@ -2,9 +2,8 @@ import torch
 import sys
 import matplotlib.pyplot as plt
 
-from data_loader import DataLoader
-sys.path.append("../model")
-from diet import DIETModel
+from .data_loader import DataLoader
+from ..model.diet import DIETModel
 
 
 class Trainer:
@@ -25,7 +24,7 @@ class Trainer:
         self.checkpoint_name = checkpoint_name
         self.checkpoint_path = checkpoint_path
         if self.checkpoint_path is None:
-            self.checkpoint_path = "../model"
+            self.checkpoint_path = "../models"
             print(f"Model checkpoints will be saved to {self.checkpoint_path}")
         if self.checkpoint_name is None:
             self.checkpoint_name = "diet_model.pt"
@@ -49,11 +48,6 @@ class Trainer:
         # 5. Backward pass
         loss.backward()
         self.optimizer.step()
-        # Fix values of transition matrix for PAD tag
-        with torch.no_grad():
-            pad_idx = self.model.entity_pad_idx
-            self.model.crf.transitions[pad_idx, :] = -1e4  # No transition from PAD to any tag
-            self.model.crf.transitions[:, pad_idx] = -1e4  # No transition to PAD from any tag
         return loss.item()
     
     def train(self):

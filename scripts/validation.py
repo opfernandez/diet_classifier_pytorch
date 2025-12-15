@@ -1,30 +1,25 @@
 import torch
-import sys
 import os
 import time
-import numpy as np
+import json
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
-from data_loader import DataLoader
-from trainer import Trainer
-sys.path.append("../model")
-from diet import DIETModel
-from sparse_features_extractor import SparseFeatureExtractor
+from diet_classifier.training import DataLoader
+from diet_classifier.model import DIETModel, SparseFeatureExtractor
+from train import load_json
 
 def main():
     # Get script directory for relative paths
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Hyperparameters
-    data_path = os.path.join(script_dir, "../data/validation.yml")
+    # Parameters
     batch_size = 1
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
-    entity_labels = ["EOS", "BOS", "PAD", "O", "B-sala", "I-sala", 
-                     "B-dispositivo", "I-dispositivo"]
-    intent_labels = ["encender_luz", "apagar_luz", 
-                     "apagar_enchufe", "activar_enchufe",
-                     "subir_persiana", "bajar_persiana", "parar_persiana"]
+    # Load data
+    data_path = os.path.join(script_dir, "../data/validation.yml")
+    entity_labels = load_json(os.path.join(script_dir, "../data/entity_labels.json"))
+    intent_labels = load_json(os.path.join(script_dir, "../data/intent_labels.json"))
 
     # Initialize DataLoader
     data_loader = DataLoader(data_path=data_path, 
@@ -65,7 +60,7 @@ def main():
     )
 
     # Test saved model
-    model_path = "../model/diet_model.pt"
+    model_path = os.path.join(script_dir, "../models/diet_model.pt")
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)  # Move model to the correct device
     model.eval()

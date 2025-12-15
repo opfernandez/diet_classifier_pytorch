@@ -1,7 +1,7 @@
 import torch
 from torch import nn
-from sparse_features_extractor import SparseFeatureExtractor
-from crf import CRF
+from .sparse_features_extractor import SparseFeatureExtractor
+from .crf import CRF
 
 class DIETModel(nn.Module):
     def __init__(self, sparse_extractor: SparseFeatureExtractor,

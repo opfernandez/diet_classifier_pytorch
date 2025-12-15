@@ -6,10 +6,8 @@ import json
 import socket
 import threading
 
-from data_loader import DataLoader
-sys.path.append("../model")
-from diet import DIETModel
-from sparse_features_extractor import SparseFeatureExtractor
+from ..model.diet import DIETModel
+from ..model.sparse_features_extractor import SparseFeatureExtractor
 
 
 

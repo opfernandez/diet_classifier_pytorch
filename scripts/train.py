@@ -1,29 +1,33 @@
 import torch
-import sys
 import os
 import time
+import json
 
-from data_loader import DataLoader
-from trainer import Trainer
-sys.path.append("../model")
-from diet import DIETModel
-from sparse_features_extractor import SparseFeatureExtractor
+from diet_classifier.training import DataLoader, Trainer
+from diet_classifier.model import DIETModel, SparseFeatureExtractor
+
+def load_json(filepath: str) -> dict:
+        """Load JSON file."""
+        try:
+            with open(filepath, "r", encoding="utf8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Failed to load {filepath}: {e}")
+            raise
 
 def main():
     # Get script directory for relative paths
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Hyperparameters
-    data_path = os.path.join(script_dir, "../data/data.yml")
     batch_size = 32
     lr = 1e-3
     epochs = 20
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
-    entity_labels = ["EOS", "BOS", "PAD", "O", "B-sala", "I-sala", 
-                     "B-dispositivo", "I-dispositivo"]
-    intent_labels = ["encender_luz", "apagar_luz", 
-                     "apagar_enchufe", "activar_enchufe",
-                     "subir_persiana", "bajar_persiana", "parar_persiana"]
+    # Load data
+    data_path = os.path.join(script_dir, "../data/data.yml")
+    entity_labels = load_json(os.path.join(script_dir, "../data/entity_labels.json"))
+    intent_labels = load_json(os.path.join(script_dir, "../data/intent_labels.json"))
 
     # Initialize DataLoader
     data_loader = DataLoader(data_path=data_path, 
