@@ -13,7 +13,9 @@ dependencies = [
     "pyyaml",
     "matplotlib",
     "scikit-learn",
-    "numpy"
+    "numpy",
+    "fastapi",
+    "uvicorn"
 ]
 
 [project.optional-dependencies]
