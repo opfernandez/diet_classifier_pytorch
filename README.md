@@ -6,6 +6,8 @@ This implementation is based on the following papers:
 - [DIET: Lightweight Language Understanding for Dialogue Systems](https://arxiv.org/abs/2004.09936) (Bunk et al., 2020)
 - [Neural Architectures for Named Entity Recognition](https://arxiv.org/abs/1603.01360) (Lample et al., 2016)
 
+![DIET Classifier Demo](doc/diet_api.gif)
+
 ## Table of Contents
 
 - [Overview](#overview)
