@@ -372,6 +372,91 @@ echo '{"text": "encender la luz de la cocina"}' | nc localhost 5555
 }
 ```
 
+### FastAPI Inference Server
+
+The project also includes a REST API server using FastAPI for easier integration:
+
+#### Running Locally
+
+```bash
+# From the project root
+python scripts/inference_fastapi.py
+```
+
+The server will start on `http://0.0.0.0:8000`.
+
+#### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | API information |
+| `/health` | GET | Health check |
+| `/predict` | POST | Perform inference |
+
+#### Example Request
+
+```bash
+curl -X POST "http://localhost:8000/predict" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "encender la luz de la cocina"}'
+```
+
+**Response:**
+```json
+{
+    "status": "success",
+    "result": {
+        "text": "encender la luz de la cocina",
+        "intent": "turn_on_light",
+        "intent_confidence": 0.95,
+        "entities": [
+            {"type": "room", "start": 4, "end": 4, "words": "cocina"}
+        ],
+        "inference_time_ms": 2.5
+    }
+}
+```
+
+---
+
+### Docker Deployment
+
+The project includes a Dockerfile for containerized deployment.
+
+#### Building the Docker Image
+
+```bash
+docker build -t diet-classifier .
+```
+
+#### Running the Container
+
+```bash
+# Run with CPU
+docker run -p 8000:8000 diet-classifier
+
+# Run with GPU support (requires nvidia-docker)
+docker run --gpus all -p 8000:8000 diet-classifier
+```
+
+#### Testing the Container
+
+Once the container is running, you can test the API:
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Prediction
+curl -X POST "http://localhost:8000/predict" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "apagar el enchufe del salón"}'
+```
+
+The API can also be tested accesing the automatically generated Swagger UI at `http://localhost:8000/docs`. For that, just open a web browser and navigate to that URL, then click on the `/predict` endpoint to try it out. 
+
+---
+
 ### Programmatic Inference
 
 ```python
@@ -399,6 +484,7 @@ print(results[0])
 ```
 diet_classifier_pytorch/
 ├── pyproject.toml              # Project configuration and dependencies
+├── Dockerfile                  # Docker container configuration
 ├── README.md
 │
 ├── data/
@@ -414,7 +500,9 @@ diet_classifier_pytorch/
 │
 ├── scripts/
 │   ├── train.py                # Training entry point
-│   └── validation.py           # Validation and metrics computation
+│   ├── validation.py           # Validation and metrics computation
+│   ├── inference_server.py     # Socket-based inference server launcher
+│   └── inference_fastapi.py    # FastAPI REST inference server
 │
 └── src/
     └── diet_classifier/
@@ -433,7 +521,7 @@ diet_classifier_pytorch/
         │
         └── inference/
             ├── __init__.py
-            └── server.py                   # Socket-based inference server
+            └── server.py                   # DIETServer class for inference
 ```
 
 ---
