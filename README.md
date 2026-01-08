@@ -6,6 +6,8 @@ This implementation is based on the following papers:
 - [DIET: Lightweight Language Understanding for Dialogue Systems](https://arxiv.org/abs/2004.09936) (Bunk et al., 2020)
 - [Neural Architectures for Named Entity Recognition](https://arxiv.org/abs/1603.01360) (Lample et al., 2016)
 
+![DIET Classifier Demo](doc/diet_api.gif)
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -38,7 +40,7 @@ The key advantage of DIET is that it achieves competitive performance without re
 
 ## Installation
 
-### Using uv (Recommended)
+### Using uv 
 
 [uv](https://docs.astral.sh/uv/) is a fast Python package and project manager. To install the project with uv:
 
@@ -57,30 +59,6 @@ uv pip install -e .
 # Or install with dev dependencies
 uv pip install -e ".[dev]"
 ```
-
-### Using pip
-
-```bash
-# Clone the repository
-git clone https://github.com/opfernandez/diet_classifier_pytorch.git
-cd diet_classifier_pytorch
-
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate 
-
-# Install the package
-pip install -e .
-```
-
-### Dependencies
-
-The project requires the following packages:
-- `torch` - PyTorch deep learning framework
-- `pyyaml` - YAML file parsing
-- `matplotlib` - Visualization
-- `scikit-learn` - Machine learning utilities
-- `numpy` - Numerical computing
 
 ---
 
@@ -317,7 +295,7 @@ For each batch:
 
 ```bash
 cd scripts
-python train.py
+uv run train.py
 ```
 
 This will:
@@ -331,7 +309,7 @@ This will:
 
 ```bash
 cd scripts
-python validation.py
+uv run validation.py
 ```
 
 This will:
@@ -343,18 +321,7 @@ This will:
 
 ### Inference Server
 
-The project includes a socket-based inference server for production deployment:
-
-```bash
-python -m diet_classifier.inference.server
-```
-
-This starts a TCP server on `0.0.0.0:5555` that accepts JSON requests:
-
-```bash
-# Example client request
-echo '{"text": "encender la luz de la cocina"}' | nc localhost 5555
-```
+The project includes a inference server for production deployment. Any API REST server can wrap this class for integration.
 
 **Response format:**
 ```json
@@ -371,6 +338,91 @@ echo '{"text": "encender la luz de la cocina"}' | nc localhost 5555
     }
 }
 ```
+
+### FastAPI Inference Server
+
+The project also includes a REST API server using FastAPI for easier integration:
+
+#### Running Locally
+
+```bash
+cd scripts
+uv run inference_fastapi.py -p <your_port>
+```
+
+The server will start on `http://0.0.0.0:<your_port>`. If no port is specified, it defaults to `8000`.
+
+#### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | API information |
+| `/health` | GET | Health check |
+| `/predict` | POST | Perform inference |
+
+#### Example Request
+
+```bash
+curl -X POST "http://localhost:8000/predict" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "encender la luz de la cocina"}'
+```
+
+**Response:**
+```json
+{
+    "status": "success",
+    "result": {
+        "text": "encender la luz de la cocina",
+        "intent": "turn_on_light",
+        "intent_confidence": 0.95,
+        "entities": [
+            {"type": "room", "start": 4, "end": 4, "words": "cocina"}
+        ],
+        "inference_time_ms": 2.5
+    }
+}
+```
+
+---
+
+### Docker Deployment
+
+The project includes a Dockerfile for containerized deployment.
+
+#### Building the Docker Image
+
+```bash
+docker build -t diet-classifier .
+```
+
+#### Running the Container
+
+```bash
+# Run with CPU
+docker run -p 8000:8000 diet-classifier
+
+# Run with GPU support (requires nvidia-docker)
+docker run --gpus all -p 8000:8000 diet-classifier
+```
+
+#### Testing the Container
+
+Once the container is running, you can test the API:
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Prediction
+curl -X POST "http://localhost:8000/predict" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "apagar el enchufe del salón"}'
+```
+
+The API can also be tested accesing the automatically generated Swagger UI at `http://localhost:8000/docs`. For that, just open a web browser and navigate to that URL, then click on the `/predict` endpoint to try it out. 
+
+---
 
 ### Programmatic Inference
 
@@ -399,6 +451,7 @@ print(results[0])
 ```
 diet_classifier_pytorch/
 ├── pyproject.toml              # Project configuration and dependencies
+├── Dockerfile                  # Docker container configuration
 ├── README.md
 │
 ├── data/
@@ -414,7 +467,8 @@ diet_classifier_pytorch/
 │
 ├── scripts/
 │   ├── train.py                # Training entry point
-│   └── validation.py           # Validation and metrics computation
+│   ├── validation.py           # Validation and metrics computation
+│   └── inference_fastapi.py    # FastAPI REST inference server
 │
 └── src/
     └── diet_classifier/
@@ -433,7 +487,7 @@ diet_classifier_pytorch/
         │
         └── inference/
             ├── __init__.py
-            └── server.py                   # Socket-based inference server
+            └── server.py                   # DIETServer class for inference
 ```
 
 ---
