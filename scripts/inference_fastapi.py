@@ -1,5 +1,6 @@
 import os
 import torch
+import argparse
 from fastapi import FastAPI
 import uvicorn
 from diet_classifier.inference.server import DIETServer
@@ -44,6 +45,10 @@ async def predict(request: dict):
         return {"error": str(e), "status": "error"}
 
 def main():
+    # Get command line arguments
+    parser = argparse.ArgumentParser(description="Start DIET FastAPI Inference Server")
+    parser.add_argument("-p", "--port", type=int, default=8000, help="Port to run the FastAPI server on")
+    args = parser.parse_args()
     # Get script directory for relative paths
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Config files
@@ -65,7 +70,7 @@ def main():
         intent_labels_path=intents_file
     )
     # Start the FastAPI server
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=args.port)
 
 
 if __name__ == "__main__":
