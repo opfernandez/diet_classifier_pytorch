@@ -40,7 +40,7 @@ The key advantage of DIET is that it achieves competitive performance without re
 
 ## Installation
 
-### Using uv (Recommended)
+### Using uv 
 
 [uv](https://docs.astral.sh/uv/) is a fast Python package and project manager. To install the project with uv:
 
@@ -59,30 +59,6 @@ uv pip install -e .
 # Or install with dev dependencies
 uv pip install -e ".[dev]"
 ```
-
-### Using pip
-
-```bash
-# Clone the repository
-git clone https://github.com/opfernandez/diet_classifier_pytorch.git
-cd diet_classifier_pytorch
-
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate 
-
-# Install the package
-pip install -e .
-```
-
-### Dependencies
-
-The project requires the following packages:
-- `torch` - PyTorch deep learning framework
-- `pyyaml` - YAML file parsing
-- `matplotlib` - Visualization
-- `scikit-learn` - Machine learning utilities
-- `numpy` - Numerical computing
 
 ---
 
@@ -319,7 +295,7 @@ For each batch:
 
 ```bash
 cd scripts
-python train.py
+uv run train.py
 ```
 
 This will:
@@ -333,7 +309,7 @@ This will:
 
 ```bash
 cd scripts
-python validation.py
+uv run validation.py
 ```
 
 This will:
@@ -345,18 +321,7 @@ This will:
 
 ### Inference Server
 
-The project includes a socket-based inference server for production deployment:
-
-```bash
-python -m diet_classifier.inference.server
-```
-
-This starts a TCP server on `0.0.0.0:5555` that accepts JSON requests:
-
-```bash
-# Example client request
-echo '{"text": "encender la luz de la cocina"}' | nc localhost 5555
-```
+The project includes a inference server for production deployment. Any API REST server can wrap this class for integration.
 
 **Response format:**
 ```json
@@ -381,11 +346,11 @@ The project also includes a REST API server using FastAPI for easier integration
 #### Running Locally
 
 ```bash
-# From the project root
-python scripts/inference_fastapi.py
+cd scripts
+uv run inference_fastapi.py -p <your_port>
 ```
 
-The server will start on `http://0.0.0.0:8000`.
+The server will start on `http://0.0.0.0:<your_port>`. If no port is specified, it defaults to `8000`.
 
 #### API Endpoints
 
@@ -503,7 +468,6 @@ diet_classifier_pytorch/
 ├── scripts/
 │   ├── train.py                # Training entry point
 │   ├── validation.py           # Validation and metrics computation
-│   ├── inference_server.py     # Socket-based inference server launcher
 │   └── inference_fastapi.py    # FastAPI REST inference server
 │
 └── src/
