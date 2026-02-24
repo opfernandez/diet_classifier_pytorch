@@ -50,14 +50,7 @@ git clone https://github.com/opfernandez/diet_classifier_pytorch.git
 cd diet_classifier_pytorch
 
 # Create a virtual environment and install dependencies
-uv venv
-source .venv/bin/activate 
-
-# Install the package in development mode
-uv pip install -e .
-
-# Or install with dev dependencies
-uv pip install -e ".[dev]"
+uv sync
 ```
 
 ---
