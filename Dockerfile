@@ -9,10 +9,10 @@ COPY . .
 
 # Install uv (dependency manager)
 RUN pip install uv
-RUN uv sync --no-dev
+RUN uv sync
 
 # Expose FastAPI default port
 EXPOSE 8000
 
 # Command to run API with Uvicorn
-CMD ["uv", "run", "scripts/inference_fastapi.py"]
+CMD ["uv", "run", "--frozen", "--extra", "cpu", "scripts/inference_fastapi.py"]
