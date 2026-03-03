@@ -36,6 +36,14 @@ torch = [
     { index = "pytorch-cpu",   marker = "extra == 'cpu'" },
 ]
 
+[tool.uv]
+conflicts = [
+  [
+    { extra = "cuda130" },
+    { extra = "cpu" },
+  ]
+]
+
 [project.optional-dependencies]
 cuda = ["torch==2.5.1"]
 cpu  = ["torch==2.5.1"]
