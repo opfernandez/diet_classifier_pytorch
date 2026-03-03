@@ -9,7 +9,7 @@ description = "DIET Classifier - Dual Intent and Entity Transformer in PyTorch"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-    "torch",   
+    "torch==2.5.1",   
     "pyyaml",
     "matplotlib",
     "scikit-learn",
@@ -18,66 +18,27 @@ dependencies = [
     "uvicorn"
 ]
 
-[project.optional-dependencies]
-cuda128 = ["torch"]
-cuda126 = ["torch"]
-cuda124 = ["torch"]
-cuda121 = ["torch"]
-cuda118 = ["torch"]
-cpu = ["torch"]
+# Index CPU
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+# Index CUDA 13.0
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cuda128", extra = "cuda128" },
-    { index = "pytorch-cuda126", extra = "cuda126" },
-    { index = "pytorch-cuda124", extra = "cuda124" },
-    { index = "pytorch-cuda121", extra = "cuda121" },   
-    { index = "pytorch-cuda118", extra = "cuda118" },
-    { index = "pytorch-cpu", extra = "cpu"},
+    { index = "pytorch-cu130", marker = "extra == 'cuda'" },
+    { index = "pytorch-cpu",   marker = "extra == 'cpu'" },
 ]
 
-[tool.uv]
-conflicts = [
-  [
-    { extra = "cuda128" },
-    { extra = "cuda126" },
-    { extra = "cuda124" },
-    { extra = "cuda121" },
-    { extra = "cuda118" },
-    { extra = "cpu" },
-  ]
-]
-
-[[tool.uv.index]]
-name     = "pytorch-cpu"
-url      = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name     = "pytorch-cuda128"
-url      = "https://download.pytorch.org/whl/cu128"
-explicit = true
-
-[[tool.uv.index]]
-name     = "pytorch-cuda126"
-url      = "https://download.pytorch.org/whl/cu126"
-explicit = true
-
-[[tool.uv.index]]
-name     = "pytorch-cuda124"
-url      = "https://download.pytorch.org/whl/cu124"
-explicit = true
-
-[[tool.uv.index]]
-name     = "pytorch-cuda121"
-url      = "https://download.pytorch.org/whl/cu121"
-explicit = true
-
-[[tool.uv.index]]
-name     = "pytorch-cuda118"
-url      = "https://download.pytorch.org/whl/cu118"
-explicit = true
-
+[project.optional-dependencies]
+cuda = ["torch==2.5.1"]
+cpu  = ["torch==2.5.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
