@@ -18,35 +18,5 @@ dependencies = [
     "uvicorn"
 ]
 
-# Index CPU
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-# Index CUDA 13.0
-[[tool.uv.index]]
-name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
-explicit = true
-
-[tool.uv.sources]
-torch = [
-    { index = "pytorch-cu130", marker = "extra == 'cuda'" },
-    { index = "pytorch-cpu",   marker = "extra == 'cpu'" },
-]
-
-[tool.uv]
-conflicts = [
-  [
-    { extra = "cuda130" },
-    { extra = "cpu" },
-  ]
-]
-
-[project.optional-dependencies]
-cuda = ["torch==2.5.1"]
-cpu  = ["torch==2.5.1"]
-
 [tool.setuptools.packages.find]
 where = ["src"]

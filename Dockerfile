@@ -9,7 +9,7 @@ COPY . .
 
 # Install uv (dependency manager)
 RUN pip install uv
-RUN uv sync --frozen --extra cpu
+RUN uv sync
 
 # Expose FastAPI default port
 EXPOSE 8000
