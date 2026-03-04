@@ -77,34 +77,38 @@ nlu:
 - intent: subir_persiana
   examples: |
     - abre las persianas del [salon](sala)
-    - quiero luz natural en el [dormitorio](sala)
     - alza la persiana de la [cocina](sala)
     - levanta las persianas del [comedor](sala)
-    - abre las cortinas del [pasillo](sala)
-    - deja entrar luz en el [garaje](sala)
     - eleva la persiana de la [terraza](sala)
-    - quiero que entre luz al [jardin](sala)
     - abre la persiana del [sotano](sala) por favor
     - levanta la persiana del [lavadero](sala)
     - abre las persianas de la [buhardilla](sala)
     - sube las persianas del [gimnasio](sala)
-    - quiero luz solar en la [oficina](sala)
+    - por favor abre las persianas de la [oficina](sala)
+    - sube todas las persianas del [dormitorio](sala)
+    - alza las persianas del [vestibulo](sala)
+    - levanta las persianas del [habitacion](sala)
+    - abre las persianas del [despacho](sala)
+    - sube la persiana del [garaje](sala)
+    - por favor alza la persiana del [pasillo](sala)
 
 - intent: bajar_persiana
   examples: |
     - cierra las persianas del [salon](sala)
-    - no quiero luz natural en el [dormitorio](sala)
     - cierra la persiana del [aseo](sala)
     - baja las persianas del [comedor](sala)
-    - cierra las cortinas del [pasillo](sala)
-    - no dejes entrar luz en el [garaje](sala)
+    - baja las persianas del [pasillo](sala)
     - desciende la persiana de la [terraza](sala)
-    - quiero que no entre luz al [jardin](sala)
     - cierra la persiana del [sotano](sala) por favor
     - desciende la persiana del [lavadero](sala)
     - cierra las persianas de la [buhardilla](sala)
     - baja las persianas del [gimnasio](sala)
-    - no quiero luz solar en la [oficina](sala)
+    - por favor cierra las persianas de la [oficina](sala)
+    - baja todas las persianas del [dormitorio](sala)
+    - cierra las persianas del [vestibulo](sala)
+    - baja las persianas del [habitacion](sala)
+    - cierra las persianas del [despacho](sala)
+    - baja la persiana del [garaje](sala)
 
 - intent: parar_persiana
   examples: |
@@ -122,3 +126,39 @@ nlu:
     - que pare la persiana del [garaje](sala)
     - detener persiana de la [terraza](sala)
     - para el movimiento del [despacho](sala)
+
+- intent: activar_modo
+  examples: |
+    - pon el modo [noche](modo)
+    - quiero el modo [vacaciones](modo)
+    - activa el modo [cine](modo) por favor
+    - ponme en modo [relax](modo)
+    - habilita el modo [trabajo](modo)
+    - quiero que actives el modo [musica](modo)
+    - activa el modo [romantico](modo)
+    - por favor pon el modo [deporte](modo)
+    - quiero el modo [siesta](modo)
+    - activa el modo [buenas noches](modo)
+    - pon en marcha el modo [meditacion](modo)
+    - habilita el modo [yoga](modo)
+    - activa el modo [concentracion](modo)
+    - quiero modo [ahorro de energia](modo)
+    - por favor activa el modo [videollamada](modo)
+
+- intent: desactivar_modo
+  examples: |
+    - quita el modo [noche](modo)
+    - ya no quiero el modo [vacaciones](modo)
+    - desactiva el modo [cine](modo) por favor
+    - quitame el modo [relax](modo)
+    - deshabilita el modo [trabajo](modo)
+    - quiero que desactives el modo [musica](modo)
+    - desactiva el modo [romantico](modo)
+    - por favor quita el modo [deporte](modo)
+    - cancela el modo [siesta](modo)
+    - desactiva el modo [buenas noches](modo)
+    - para el modo [meditacion](modo)
+    - deshabilita el modo [yoga](modo)
+    - sal del modo [concentracion](modo)
+    - ya no quiero el modo [ahorro de energia](modo)
+    - por favor desactiva el modo [videollamada](modo)
